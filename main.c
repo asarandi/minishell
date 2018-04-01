@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/01 04:13:41 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/01 04:25:05 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -542,12 +542,10 @@ void	build_child_av_list(t_shell *sh, char *str)
 	k = 0;
 	flag = 0;
 
+	while ((str[i]) && (ft_isspace(str[i])))
+		i++;
 	while (str[i])
 	{
-		while ((str[i]) && (ft_isspace(str[i])))
-			i++;
-		if (str[i] == 0)
-			break ;
 //////////////////////////////////////////////////////////////////////////////////////////
 		if (str[i] == STRONG_Q)
 		{
@@ -618,19 +616,24 @@ void	build_child_av_list(t_shell *sh, char *str)
 		}
 	//////////////////////////////////////////////////////////////////////////////////////////
 		if (str[i] == BACKSLASH)
-			buf[k++] = str[++i++];
+		{
+			i++;
+			buf[k++] = str[i++];
+		}
 		else
 			buf[k++] = str[i++];
-	}
-	buf[k] = 0;
-	if (k > 0)
-		//char	**add_element_to_char_array(char **array, char *string)
-		add_string_to_argument_vector(sh->child_av, buf);
 
+		if ((ft_isspace(str[i])) || (str[i] == 0))
+		{
+			buf[k] = 0;
+			add_string_to_argument_vector(sh->child_av, buf);				//done with this argument, get next
+			k = 0;
+			while ((str[i]) && (ft_isspace(str[i])))
+				i++;
+		}
+	}
 	free(buf);
 	free(key_name);
-
-
 }
 
 int		main(int argc, char **argv, char **envp)
