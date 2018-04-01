@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/03/31 05:52:23 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/03/31 17:21:53 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ typedef struct	s_shell
 #define PAGE_SIZE		4096
 #define e_nomem			"out of memory"
 #define e_readfail		"read() failed"
+#define e_gnlfail		"get_next_line() failed"
 #define NUM_BUILTINS	6
 
 const char *builtin_list[] = {
@@ -131,6 +132,7 @@ t_shell	*init(int argc, char **argv, char **envp)
 	return (sh);
 }
 
+/*
 void	increase_buffer(t_shell *sh)
 {
 	char	*newbuf;
@@ -142,7 +144,9 @@ void	increase_buffer(t_shell *sh)
 	sh->buffer = newbuf;
 	sh->bufsize += PAGE_SIZE;
 }
+*/
 
+/*
 void	get_input(t_shell *sh)
 {
 	size_t	i;
@@ -167,6 +171,16 @@ void	get_input(t_shell *sh)
 	}
 	return ;
 }
+*/
+
+void	get_input(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "%s", shell_prompt);
+	sh->buffer = NULL;
+	if (get_next_line(STDIN_FILENO, &(sh->buffer)) == -1)
+		fatal_error_message(sh, e_gnlfail);
+	return ;
+}
 
 int	builtin_cmd_index(char *cmd)
 {
@@ -182,20 +196,70 @@ int	builtin_cmd_index(char *cmd)
 	return (-1);
 }
 
+char	*get_word_by_index(char *str, int index)
+{
+	int		i;
+
+	i = 0;
+	while ((str[i]) && (ft_isspace(str[i])))
+		i++;
+	if (str[i] == 0)
+		return (NULL);
+	if (index == 0)
+		return (&str[i]);
+	while ((str[i]) && (!ft_isspace(str[i])))
+		i++;
+	return (get_word_by_index(&str[i], index - 1));
+}
+
+int		get_word_length(char *str)
+{
+	int		i;
+
+	i = 0;
+	while ((str[i]) && (!ft_isspace(str[i])))
+		i++;
+	return (i);
+}
+
+char	*argument_by_index(t_shell *sh, char *str, int index)
+{
+	char	*argument;
+	int		length;
+	char	*result;
+
+	if ((argument = get_word_by_index(str, index)) == NULL)
+		return (NULL);
+	if ((length = get_word_length(argument)) == 0)
+		return (NULL);
+	if ((result = ft_memalloc(length + 1)) == NULL)
+		fatal_error_message(sh, e_nomem);
+	return (ft_strncpy(result, argument, length));
+}
+
 int		main(int argc, char **argv, char **envp)
 {
 	t_shell	*sh;
+	char	*argument;
+	int		i;
 
 	sh = init(argc, argv, envp);
 	while (1)
 	{
 		get_input(sh);
+		i = 0;
+		while ((argument = argument_by_index(sh, sh->buffer, i)) != NULL)
+		{
+			ft_printf(1, "index %d, argument = %s\n", i, argument);
+			free(argument);
+			i++;
+		}
+
 		if (ft_strcmp(sh->buffer, "exit") == 0)
 			break ;
 //		execute(sh);
 		if (sh->buffer != NULL)
 			free(sh->buffer);
-		sh->buffer = NULL;
 	}
 	clean_up(sh);
 	return (0);
