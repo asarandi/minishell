@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/03/31 22:31:51 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/01 04:13:41 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,6 +77,20 @@ void	builtin_cd(t_shell *sh)
 
 //setenv: Variable name must contain alphanumeric characters.
 
+int		ft_isalnum2(int c)
+{
+	if ((c >= '0') && (c <= '9'))
+		return (1);
+	else if ((c >= 'A') && (c <= 'Z'))
+		return (1);
+	else if ((c >= 'a') && (c <= 'z'))
+		return (1);
+	else if (c == '_')
+		return (1);
+	else
+		return (0);
+}
+
 int		is_alphanumeric_string(char *str)
 {
 	int	i;
@@ -84,7 +98,7 @@ int		is_alphanumeric_string(char *str)
 	i = 0;
 	while (str[i])
 	{
-		if (!ft_isalnum(str[i]))
+		if (!ft_isalnum2(str[i]))
 			return (0);
 		i++;
 	}
@@ -431,22 +445,6 @@ int		builtin_cmd_index(char *cmd)
 	return (-1);
 }
 
-char	*get_word_by_index(char *str, int index)
-{
-	int		i;
-
-	i = 0;
-	while ((str[i]) && (ft_isspace(str[i])))
-		i++;
-	if (str[i] == 0)
-		return (NULL);
-	if (index == 0)
-		return (&str[i]);
-	while ((str[i]) && (!ft_isspace(str[i])))
-		i++;
-	return (get_word_by_index(&str[i], index - 1));
-}
-
 int		get_word_length(char *str)
 {
 	int		i;
@@ -456,6 +454,26 @@ int		get_word_length(char *str)
 		i++;
 	return (i);
 }
+
+char	*get_word_by_index(char *str, int index)
+{
+	int		i;
+	int		k;
+
+	i = 0;
+	while ((str[i]) && (ft_isspace(str[i])))
+		i++;
+	if (str[i] == 0)
+		return (NULL);
+	k = get_word_length(&str[i]);
+	if (k == -1)
+		return (NULL);
+	if (index == 0)
+		return (&str[i]);
+	i += k;
+	return (get_word_by_index(&str[i], index - 1));
+}
+
 
 char	*argument_by_index(t_shell *sh, char *str, int index)
 {
@@ -481,6 +499,138 @@ int		count_command_arguments(char *str)
 	while ((word = get_word_by_index(str, i)) != NULL)
 		i++;
 	return (i);
+}
+
+
+
+/*
+ * if we have white space at the beginning of the string, we ignore it
+ * if we have a:
+ * 		single quote - we look for the matching end quote,
+ * 		if the character before the opening quote was whitespace,
+ * 		then opening quote denotes beginning of string [   'hello '   ] => only [hello ] is copied
+ * 		if after closing quote next character is whitespace,
+ * 		then that denotes the end of the argument;
+ *
+ * 		however if before the opening quote and/or after the closing quote
+ * 		we have a character that is not whitespace then
+ * 		those adjacent characters become part of the argument; [   asd'helo  'zxc ] => [asdhelo  zxc]
+ *
+ * 		inside single quotes we DO NOT expand shell variables [echo '$HOME'] will result in [$HOME]
+ *
+ * 		inside doubles quotes we DO expand shell variables [echo asd"$HOME"zxc] will result in [asd/home/user/zxc]
+ *
+ */
+
+void	build_child_av_list(t_shell *sh, char *str)
+{
+	int	i;
+	int k;
+	int j;
+	int	flag;
+	char	*buf;
+	char	*key_name;
+	char	*value;
+
+#define STRONG_Q	0x27
+#define WEAK_Q		0x22
+#define BACKSLASH	0x5c
+
+	buf = ft_memalloc(PAGE_SIZE * 2);	/* XXX buffer for argument*/
+	key_name = ft_memalloc(PAGE_SIZE);	/* XXX */
+	i = 0;
+	k = 0;
+	flag = 0;
+
+	while (str[i])
+	{
+		while ((str[i]) && (ft_isspace(str[i])))
+			i++;
+		if (str[i] == 0)
+			break ;
+//////////////////////////////////////////////////////////////////////////////////////////
+		if (str[i] == STRONG_Q)
+		{
+			flag = 1;
+			i++;
+			if (ft_strchr(&str[i], STRONG_Q) == NULL)
+			{
+				//error, return
+				ft_printf(STDERR_FILENO, "Unmatched '.\n");
+			}
+			while (str[i] != STRONG_Q)
+				buf[k++] = str[i++];
+			i++;
+			if (ft_isspace(str[i]))
+			{
+				buf[k] = 0;
+				//char	**add_element_to_char_array(char **array, char *string)
+				add_string_to_argument_vector(sh->child_av, buf);				//done with this argument, get next
+				k = 0;
+			}
+			continue ;
+		}
+//////////////////////////////////////////////////////////////////////////////////////////
+		if (str[i] == WEAK_Q)
+		{
+			flag = 2;
+			i++;
+			if (ft_strchr(&str[i], WEAK_Q) == NULL)
+			{
+				//error, return
+				ft_printf(STDERR_FILENO, "Unmatched \".\n");
+			}
+			while (str[i] != WEAK_Q)
+			{
+				if ((str[i] == '$') && (ft_isalpha(str[i + 1])))
+				{
+					i++;
+					j = 0;
+					while (ft_isalnum2(str[i + j]))
+						j++;
+					ft_strncpy(key_name, &str[i], j);
+					key_name[j] = 0;
+					value = kv_array_get_key_value(sh->envp, key_name);
+					if (!value)
+					{
+						//error	.. no such variable, return
+						ft_printf(STDERR_FILENO, "%s: Undefined variable.\n", key_name);
+						// return
+					}
+					j = 0;
+					while (value[j])
+						buf[k++] = value[j++];
+					i += ft_strlen(key_name);
+					continue;
+				}
+				else
+					buf[k++] = str[i++];
+			}
+			i++;
+			if (ft_isspace(str[i]))
+			{
+				buf[k] = 0;
+				//char	**add_element_to_char_array(char **array, char *string)
+				add_string_to_argument_vector(sh->child_av, buf);				//done with this argument, get next
+				k = 0;
+			}
+			continue ;
+		}
+	//////////////////////////////////////////////////////////////////////////////////////////
+		if (str[i] == BACKSLASH)
+			buf[k++] = str[++i++];
+		else
+			buf[k++] = str[i++];
+	}
+	buf[k] = 0;
+	if (k > 0)
+		//char	**add_element_to_char_array(char **array, char *string)
+		add_string_to_argument_vector(sh->child_av, buf);
+
+	free(buf);
+	free(key_name);
+
+
 }
 
 int		main(int argc, char **argv, char **envp)
