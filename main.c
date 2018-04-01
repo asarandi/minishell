@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/03/31 17:21:53 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/03/31 19:41:21 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ typedef struct	s_shell
 #define e_nomem			"out of memory"
 #define e_readfail		"read() failed"
 #define e_gnlfail		"get_next_line() failed"
-#define NUM_BUILTINS	6
+#define NUM_BUILTINS	7
 
 const char *builtin_list[] = {
 	"echo", "cd", "setenv", "unsetenv", "env", "exit", "help"};
@@ -118,6 +118,140 @@ void	fatal_error_message(t_shell *sh, char *msg)
 {
 	ft_printf(STDERR_FILENO, "%s: error: %s\n", shell_name, msg);
 	fatal_error(sh);
+}
+
+int		count_char_array(char **array)
+{
+	int	i;
+
+	i = 0;
+	while (array[i] != NULL)
+		i++;
+	return (i);
+}
+
+char	**create_char_array_copy(char **src, int extra)
+{
+	char	**dst;
+	int		count;
+	int		i;
+
+	count = count_char_array(src);
+	dst = ft_memalloc((count + 1 + extra) * sizeof(char *));
+	i = 0;
+	while (i < count)
+	{
+		dst[i] = ft_strdup(src[i]);
+		i++;
+	}
+	while (i < count + 1 + extra)
+		dst[i] = NULL;
+	return (dst);
+}
+
+void	destroy_char_array(char **array)
+{
+	int	count;
+	int	i;
+
+	count = count_char_array(array);
+	i = 0;
+	while (i < count)
+	{
+		free(array[i]);
+		i++;
+	}
+	free(array);
+	return ;
+}
+
+
+//
+// this will create an array copy and add [string] as last element
+// old array is not destroyed, [string] is not duplicated
+//
+char	**add_element_to_char_array(char **array, char *string)
+{
+	char	**new_array;
+	int		count;
+
+	new_array = create_char_array_copy(array, 1);
+	count = count_char_array(new_array);
+	new_array[count] = string;
+	return (new_array);
+}
+
+int		kv_array_get_key_index(char **array, char *key)
+{
+	int	count;
+	int klen;
+	int i;
+
+	count = count_char_array(array);
+	klen = ft_strlen(key);
+	i = 0;
+	while (i < count)
+	{
+		if (ft_strncmp(array[i], key, klen) == 0)
+		{
+			if (array[i][klen] == '=')
+				return (i);
+		}
+		i++;
+	}
+	return (-1);
+}
+
+char	*kv_array_get_key_value(char **array, char *key)
+{
+	int	index;
+	char *value;
+
+	index = kv_array_get_key_index(array, key);
+	if (index == -1)
+		return (NULL);
+	value = ft_strchr(array[index], '=');
+	if (value == NULL)							//should not happen
+		return (NULL);
+	return (value + 1);
+}
+
+char	*create_kv_string(char *key, char *value)
+{
+	char	*result;
+	int		k_len;
+	int		v_len;
+
+	k_len = ft_strlen(key);
+	v_len = ft_strlen(value);	
+	result = ft_memalloc(k_len + v_len + 2);
+	ft_strncpy(result, key, k_len);
+	result[k_len] = '=';
+	ft_strncpy(&result[k_len + 1], value, v_len);
+	return (result);
+}
+
+void	kv_array_set_key_value(char ***array, char *key, char *value)
+{
+	int		index;
+	char	**new_array;
+	char	*new_element;
+
+	index = kv_array_get_key_index((*array), key);
+	new_element = create_kv_string(key, value);
+	if (index == -1)
+	{
+		new_array = add_element_to_char_array((*array), new_element);
+		destroy_char_array((*array));
+		*array = new_array;
+		return ;
+	}
+	else
+	{
+		free((*array)[index]);
+		(*array)[index] = new_element;
+	}
+	return ;
 }
 
 t_shell	*init(int argc, char **argv, char **envp)
