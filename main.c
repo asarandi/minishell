@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/01 04:25:05 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/01 06:02:31 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -522,21 +522,38 @@ int		count_command_arguments(char *str)
  *
  */
 
-void	build_child_av_list(t_shell *sh, char *str)
+void	add_string_to_child_argv(t_shell *sh, char *str)
+{
+	char **old_array;
+	char *new_string;
+
+	old_array = sh->child_argv;
+	new_string = ft_strdup(str);
+	sh->child_argv = add_element_to_char_array(sh->child_argv, new_string);
+	destroy_char_array(old_array);
+}
+
+
+
+void	build_child_argv_list(t_shell *sh)
 {
 	int	i;
 	int k;
 	int j;
 	int	flag;
-	char	*buf;
 	char	*key_name;
 	char	*value;
+	char	*str;
+	char	*buffer;
 
-#define STRONG_Q	0x27
-#define WEAK_Q		0x22
-#define BACKSLASH	0x5c
+	str = sh->buffer;
 
-	buf = ft_memalloc(PAGE_SIZE * 2);	/* XXX buffer for argument*/
+#define STRONG_Q		0x27
+#define WEAK_Q			0x22
+#define BACKSLASH		0x5c
+#define EMPTY_STRING	""
+
+	buffer = ft_memalloc(PAGE_SIZE * 2);	/* XXX buffer for argument*/
 	key_name = ft_memalloc(PAGE_SIZE);	/* XXX */
 	i = 0;
 	k = 0;
@@ -557,19 +574,19 @@ void	build_child_av_list(t_shell *sh, char *str)
 				ft_printf(STDERR_FILENO, "Unmatched '.\n");
 			}
 			while (str[i] != STRONG_Q)
-				buf[k++] = str[i++];
+				buffer[k++] = str[i++];
 			i++;
-			if (ft_isspace(str[i]))
+			if ((ft_isspace(str[i])) || (str[i] == 0))
 			{
-				buf[k] = 0;
+				buffer[k] = 0;
 				//char	**add_element_to_char_array(char **array, char *string)
-				add_string_to_argument_vector(sh->child_av, buf);				//done with this argument, get next
+				add_string_to_child_argv(sh, buffer);				//done with this argument, get next
 				k = 0;
 			}
 			continue ;
 		}
 //////////////////////////////////////////////////////////////////////////////////////////
-		if (str[i] == WEAK_Q)
+		else if (str[i] == WEAK_Q)
 		{
 			flag = 2;
 			i++;
@@ -593,46 +610,72 @@ void	build_child_av_list(t_shell *sh, char *str)
 					{
 						//error	.. no such variable, return
 						ft_printf(STDERR_FILENO, "%s: Undefined variable.\n", key_name);
+						value = EMPTY_STRING;
 						// return
 					}
 					j = 0;
 					while (value[j])
-						buf[k++] = value[j++];
+						buffer[k++] = value[j++];
 					i += ft_strlen(key_name);
 					continue;
 				}
 				else
-					buf[k++] = str[i++];
+					buffer[k++] = str[i++];
 			}
 			i++;
-			if (ft_isspace(str[i]))
+			if ((ft_isspace(str[i])) || (str[i] == 0))
 			{
-				buf[k] = 0;
+				buffer[k] = 0;
 				//char	**add_element_to_char_array(char **array, char *string)
-				add_string_to_argument_vector(sh->child_av, buf);				//done with this argument, get next
+				add_string_to_child_argv(sh, buffer);				//done with this argument, get next
 				k = 0;
 			}
 			continue ;
 		}
 	//////////////////////////////////////////////////////////////////////////////////////////
-		if (str[i] == BACKSLASH)
+		else if (str[i] == BACKSLASH)
 		{
 			i++;
-			buf[k++] = str[i++];
+			buffer[k++] = str[i++];
 		}
+	//////////////////////////////////////////////////////////////////////////////////////////
+
+
+		else if ((str[i] == '$') && (ft_isalpha(str[i + 1])))
+		{
+			i++;
+			j = 0;
+			while (ft_isalnum2(str[i + j]))
+				j++;
+			ft_strncpy(key_name, &str[i], j);
+			key_name[j] = 0;
+			value = kv_array_get_key_value(sh->envp, key_name);
+			if (!value)
+			{
+				//error	.. no such variable, return
+				ft_printf(STDERR_FILENO, "%s: Undefined variable.\n", key_name);
+				value = EMPTY_STRING;
+				// return
+			}
+			j = 0;
+			while (value[j])
+				buffer[k++] = value[j++];
+			i += ft_strlen(key_name);
+		}
+
 		else
-			buf[k++] = str[i++];
+			buffer[k++] = str[i++];
 
 		if ((ft_isspace(str[i])) || (str[i] == 0))
 		{
-			buf[k] = 0;
-			add_string_to_argument_vector(sh->child_av, buf);				//done with this argument, get next
+			buffer[k] = 0;
+			add_string_to_child_argv(sh, buffer);				//done with this argument, get next
 			k = 0;
 			while ((str[i]) && (ft_isspace(str[i])))
 				i++;
 		}
 	}
-	free(buf);
+	free(buffer);
 	free(key_name);
 }
 
@@ -640,7 +683,7 @@ int		main(int argc, char **argv, char **envp)
 {
 	t_shell	*sh;
 	char	*argument;
-	int		i;
+	int		i, j;
 	int		builtin;
 
 	sh = init(argc, argv, envp);
@@ -648,6 +691,16 @@ int		main(int argc, char **argv, char **envp)
 	{
 		get_input(sh);
 		i = 0;
+		sh->child_argv = ft_memalloc(sizeof(char *));
+		sh->child_argv[0] = NULL;
+		build_child_argv_list(sh);
+		j = 0;
+		while (sh->child_argv[j])
+		{
+			ft_printf(1, "child argv[%d] = %s\n", j, sh->child_argv[j]);
+			j++;
+		}
+
 		argument = argument_by_index(sh, sh->buffer, i);
 		if (argument != NULL)
 		{
@@ -659,6 +712,8 @@ int		main(int argc, char **argv, char **envp)
 			else
 				builtin = 0;					//run external command
 		}
+
+		destroy_char_array(sh->child_argv);
 
 		if (ft_strcmp(sh->buffer, "exit") == 0)
 			break ;

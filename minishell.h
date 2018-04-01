@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/03/31 20:18:49 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/01 05:00:28 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ typedef struct	s_shell
 	char		**envp;
 	char		*buffer;
 	size_t		bufsize;
+	char		**child_argv;
 }				t_shell;
 
 int		count_command_arguments(char *str);
