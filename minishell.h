@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/03/31 19:41:19 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/03/31 20:18:49 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ typedef struct	s_shell
 	size_t		bufsize;
 }				t_shell;
 
+int		count_command_arguments(char *str);
 char	**add_element_to_char_array(char **array, char *string);
 char	**create_char_array_copy(char **src, int extra);
 char	*argument_by_index(t_shell *sh, char *str, int index);
@@ -52,7 +53,7 @@ void	fatal_error(t_shell *sh);
 void	fatal_error_message(t_shell *sh, char *msg);
 void	get_input(t_shell *sh);
 void	increase_buffer(t_shell *sh);
+void	kv_array_remove_key(char **array, char *key);
 void	kv_array_set_key_value(char ***array, char *key, char *value);
-
 
 #endif
