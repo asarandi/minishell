@@ -65,14 +65,17 @@ void	builtin_echo(t_shell *sh)
 	int	i;
 
 	dash_n = 0;
-	if (ft_strcmp(sh->child_argv[1], "-n") == 0)
-		dash_n = 1;
-	i = 1 + dash_n;
-	while (sh->child_argv[i] != NULL)
+	if (sh->child_argv[1] != NULL)
 	{
-		ft_printf(STDOUT_FILENO, "%s", sh->child_argv[i]);
-		if (sh->child_argv[++i] != NULL)
-			ft_printf(STDOUT_FILENO, " ");
+		if (ft_strcmp(sh->child_argv[1], "-n") == 0)
+			dash_n = 1;
+		i = 1 + dash_n;
+		while (sh->child_argv[i] != NULL)
+		{
+			ft_printf(STDOUT_FILENO, "%s", sh->child_argv[i]);
+			if (sh->child_argv[++i] != NULL)
+				ft_printf(STDOUT_FILENO, " ");
+		}
 	}
 	if (dash_n == 0)
 		ft_printf(STDOUT_FILENO, "\n");
@@ -100,13 +103,19 @@ void	builtin_cd(t_shell *sh)
 	if ((cwd = getcwd(NULL, 0)) == NULL)
 		ft_printf(STDERR_FILENO, "%s\n", E_CWDFAIL);
 	else
+	{
 		kv_array_set_key_value(&sh->envp, "OLDPWD", cwd);
+		free(cwd);
+	}
 	if (chdir(path) == -1)
 		return ((void)ft_printf(STDERR_FILENO, E_CHDIRFAIL));
 	if ((cwd = getcwd(NULL, 0)) == NULL)
 		ft_printf(STDERR_FILENO, "%s\n", E_CWDFAIL);
 	else
+	{
 		kv_array_set_key_value(&sh->envp, "PWD", cwd);
+		free(cwd);
+	}
 }
 
 //setenv: Variable name must contain alphanumeric characters.
@@ -385,14 +394,12 @@ void	kv_array_set_key_value(char ***array, char *key, char *value)
 void	kv_array_remove_key(char **array, char *key)
 {
 	int	index;
-	int	count;
 	int i;
 
 	index = kv_array_get_key_index(array, key);
 	if (index == -1)
 		return ;
 	free(array[index]);
-	count = count_char_array(array);
 	i = index + 1;
 	while (array[i] != NULL)
 	{
@@ -557,14 +564,11 @@ int		count_command_arguments(char *str)
 
 void	cleanup_av_buffers(t_av *av)
 {
-	if (av != NULL)
-	{
-		if (av->out != NULL)
-			free(av->out);
-		if (av->key != NULL)
-			free(av->key);
-		free(av);
-	}
+	if (av->out != NULL)
+		free(av->out);
+	if (av->key != NULL)
+		free(av->key);
+	free(av);
 	return ;
 }
 
@@ -616,11 +620,9 @@ int	handle_strong_quote(t_av *av, int *i, int *k)
 int	handle_dollar_sign(t_av *av, t_shell *sh, int *i, int *k)
 {
 	int		z;
-	int		result;
 
 	(*i)++;
 	z = 0;
-	result = 1;
 	while (ft_isalnum2(av->in[*i + z]))
 		z++;
 	ft_strncpy(av->key, &(av->in[*i]), z);
@@ -629,14 +631,14 @@ int	handle_dollar_sign(t_av *av, t_shell *sh, int *i, int *k)
 	if (av->val == NULL)
 	{
 		ft_printf(STDERR_FILENO, UNDEFINED_VARIABLE, av->key);
-		av->val = EMPTY_STRING;
-		result = 0;
+		cleanup_av_buffers(av);
+		return (0);
 	}
 	z = 0;
 	while (av->val[z])
 		av->out[(*k)++] = av->val[z++];
 	(*i) += ft_strlen(av->key);
-	return (result);
+	return (1);
 }
 
 int	handle_weak_quote(t_av *av, t_shell *sh, int *i, int *k)
@@ -679,7 +681,8 @@ int build_child_argv_list(t_shell *sh, int i, int k, int sub_op)
 {
 	t_av	*av;
 
-	av = init_av_buffers(sh);
+	if ((av = init_av_buffers(sh)) == NULL)
+		return (0);
 	while ((av->in[i]) && (ft_isspace(av->in[i])))
 		i++;
 	while (av->in[i])
@@ -826,6 +829,7 @@ int		main(int argc, char **argv, char **envp)
 */
 
 		destroy_char_array(sh->child_argv);
+		sh->child_argv = NULL;
 		free(sh->buffer);
 	}
 	clean_up(sh);
