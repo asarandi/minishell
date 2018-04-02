@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/01 21:22:59 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/02 00:56:02 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,8 +29,10 @@ typedef struct	s_shell
 #define E_NOMEM				"out of memory"
 #define E_READFAIL			"read() failed"
 #define E_GNLFAIL			"get_next_line() failed"
+#define E_CWDFAIL			"getcwd() failed"
 #define	E_ALNUM				"Variable name must contain alphanumeric characters."
 #define E_TOOMANY			"Too many arguments."
+#define E_TOOMANY2			"%s: Too many arguments.\n"
 #define E_TOOFEW			"Too few arguments."
 #define E_LETTER			"Variable name must begin with a letter."
 #define	E_NOTFOUND			"%s: Command not found.\n"
@@ -60,27 +62,52 @@ void (*builtin_functions[]) (t_shell *) = {
 void	builtin_echo(t_shell *sh)
 {
 	int	dash_n;
-	char *word;
+	int	i;
 
 	dash_n = 0;
-	word = argument_by_index(sh, sh->buffer, 1);
-	if (ft_strcmp(word, "-n") == 0)
+	if (ft_strcmp(sh->child_argv[1], "-n") == 0)
 		dash_n = 1;
-	free(word);
-	if ((word = get_word_by_index(sh->buffer, 1 + dash_n)) == NULL)
-		return ;
-	ft_printf(STDOUT_FILENO, "%s", word);
+	i = 1 + dash_n;
+	while (sh->child_argv[i] != NULL)
+	{
+		ft_printf(STDOUT_FILENO, "%s", sh->child_argv[i]);
+		if (sh->child_argv[++i] != NULL)
+			ft_printf(STDOUT_FILENO, " ");
+	}
 	if (dash_n == 0)
 		ft_printf(STDOUT_FILENO, "\n");
 }
 
+
+#define	E_NOVARIABLE		"No %s variable set.\n"
+#define E_CHDIRFAIL			"chdir() failed\n"
+
+
 void	builtin_cd(t_shell *sh)
 {
-	sh->bufsize++;
-	sh->bufsize--;
-	//cd <path>, cd, cd ~, cd -
-}
+	char	*cwd;
+	char	*path;
 
+	if ((sh->child_argv[1] != NULL) && (sh->child_argv[2] != NULL))		//too many arguments
+		return ((void)ft_printf(STDERR_FILENO, E_TOOMANY2, "cd"));
+	if ((sh->child_argv[1] == NULL) || (ft_strcmp(sh->child_argv[1], "~") == 0))	//[cd] or [cd ~]
+	{
+		if ((path = kv_array_get_key_value(sh->envp, "HOME")) == NULL)
+			return ((void)ft_printf(STDERR_FILENO, E_NOVARIABLE, "$HOME"));
+	}
+	else
+		path = sh->child_argv[1];
+	if ((cwd = getcwd(NULL, 0)) == NULL)
+		ft_printf(STDERR_FILENO, "%s\n", E_CWDFAIL);
+	else
+		kv_array_set_key_value(&sh->envp, "OLDPWD", cwd);
+	if (chdir(path) == -1)
+		return ((void)ft_printf(STDERR_FILENO, E_CHDIRFAIL));
+	if ((cwd = getcwd(NULL, 0)) == NULL)
+		ft_printf(STDERR_FILENO, "%s\n", E_CWDFAIL);
+	else
+		kv_array_set_key_value(&sh->envp, "PWD", cwd);
+}
 
 //setenv: Variable name must contain alphanumeric characters.
 
@@ -112,43 +139,37 @@ int		is_alphanumeric_string(char *str)
 	return (1);
 }
 
-void	builtin_setenv_kv(t_shell *sh, int have_value)
+void	builtin_setenv_kv(t_shell *sh, int arg_count)
 {
 	char	*key;
 	char	*value;
 
-	key = argument_by_index(sh, sh->buffer, 1);
-	value  = argument_by_index(sh, sh->buffer, 2);
+	key = sh->child_argv[1];
+	value = EMPTY_STRING;
+	if (arg_count == 3)
+		value  = sh->child_argv[2];
 	if (is_alphanumeric_string(key) == 1)
 	{
 		if (ft_isalpha(key[0]))
-		{
-			if (have_value == 1)
-				kv_array_set_key_value(&sh->envp, key, value);
-			else
-				kv_array_set_key_value(&sh->envp, key, "");
-		}
+			kv_array_set_key_value(&sh->envp, key, value);
 		else
 			ft_printf(STDERR_FILENO, "setenv: %s\n", E_LETTER);
 	}
 	else
 		ft_printf(STDERR_FILENO, "setenv: %s\n", E_ALNUM);
-	free(key);
-	if (value != NULL)
-		free(value);
 }
 
 void	builtin_setenv(t_shell *sh)
 {
 	int		count;
 
-	count = count_command_arguments(sh->buffer);
+	count = count_char_array(sh->child_argv);
 	if (count == 1)
 		return builtin_env(sh);
 	else if (count == 2)
-		return builtin_setenv_kv(sh, 0);
+		return builtin_setenv_kv(sh, 2);
 	else if (count == 3)
-		return builtin_setenv_kv(sh, 1);
+		return builtin_setenv_kv(sh, 3);
 	else if (count > 3)
 		ft_printf(STDERR_FILENO, "setenv: %s\n", E_TOOMANY);
 }
@@ -159,14 +180,12 @@ void	builtin_unsetenv(t_shell *sh)
 	int		i;
 	int		count;
 
-
-	count = count_command_arguments(sh->buffer);
+	count = count_char_array(sh->child_argv);
 	i = 1;
 	while (i < count)
 	{
-		key = argument_by_index(sh, sh->buffer, i);
+		key = sh->child_argv[i];
 		kv_array_remove_key(sh->envp, key);
-		free(key);
 		i++;
 	}
 	if (i == 1)
@@ -188,9 +207,14 @@ void	builtin_env(t_shell *sh)
 
 void	builtin_exit(t_shell *sh)
 {
+	int	exit_code;
+
+	exit_code = EXIT_SUCCESS;
+	if (sh->child_argv[1] != NULL)
+		exit_code = ft_atoi(sh->child_argv[1]);
 	ft_printf(STDERR_FILENO, "exit\n");
 	clean_up(sh);
-	exit(EXIT_SUCCESS);
+	exit(exit_code);
 }
 
 void	builtin_help(t_shell *sh)
@@ -204,6 +228,8 @@ void	clean_up(t_shell *sh)
 {
 	if (sh->envp != NULL)
 		destroy_char_array(sh->envp);
+	if (sh->child_argv != NULL)
+		destroy_char_array(sh->child_argv);
 	if (sh->buffer != NULL)
 		free(sh->buffer);
 	if (sh != NULL)
@@ -769,11 +795,13 @@ int		main(int argc, char **argv, char **envp)
 			break ;
 		sh->child_argv = ft_memalloc(sizeof(char *));
 		sh->child_argv[0] = NULL;
-		build_child_argv_list(sh, 0, 0, 1);
-		if ((r = builtin_cmd_index(sh->child_argv[0])) != -1)
-			(void)builtin_functions[r](sh);
-		else
-			(void)execute_external_cmd(sh);
+		if ((build_child_argv_list(sh, 0, 0, 1) == 1) && (sh->child_argv[0] != NULL))
+		{
+			if ((r = builtin_cmd_index(sh->child_argv[0])) != -1)
+				(void)builtin_functions[r](sh);
+			else
+				(void)execute_external_cmd(sh);
+		}
 
 
 /*		

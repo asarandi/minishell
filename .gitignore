@@ -3,6 +3,7 @@
 *.swp
 debug
 minishell
+.vscode
 
 # Object files
 *.o
