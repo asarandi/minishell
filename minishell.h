@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/01 05:00:28 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/01 18:47:24 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,14 @@
 #include "libft.h"
 #include "libftprintf.h"
 #include <term.h>
+
+typedef struct	s_av
+{
+	char	*in;
+	char	*out;
+	char	*key;
+	char	*val;
+}				t_av;
 
 
 typedef struct	s_shell
@@ -40,7 +48,7 @@ int		get_word_length(char *str);
 int		kv_array_get_key_index(char **array, char *key);
 int		main(int argc, char **argv, char **envp);
 int		builtin_cmd_index(char *cmd);
-t_shell	*init(int argc, char **argv, char **envp);
+t_shell	*init_shell(int argc, char **argv, char **envp);
 void	builtin_cd(t_shell *sh);
 void	builtin_echo(t_shell *sh);
 void	builtin_env(t_shell *sh);

@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/01 06:02:31 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/01 19:13:57 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -369,7 +369,7 @@ void	kv_array_remove_key(char **array, char *key)
 	return ;
 }
 
-t_shell	*init(int argc, char **argv, char **envp)
+t_shell	*init_shell(int argc, char **argv, char **envp)
 {
 	t_shell	*sh;
 
@@ -522,161 +522,163 @@ int		count_command_arguments(char *str)
  *
  */
 
-void	add_string_to_child_argv(t_shell *sh, char *str)
+void	cleanup_av_buffers(t_av *av)
+{
+	if (av != NULL)
+	{
+		if (av->out != NULL)
+			free(av->out);
+		if (av->key != NULL)
+			free(av->key);
+		free(av);
+	}
+	return ;
+}
+
+t_av	*init_av_buffers(t_shell *sh)
+{
+	t_av	*av;
+
+	if ((av = ft_memalloc(sizeof(t_av))) == NULL)
+		return (NULL);
+	av->in = sh->buffer;
+	if ((av->out = ft_memalloc(PAGE_SIZE * 2)) == NULL)	/* XXX buffer for argument*/
+	{
+		cleanup_av_buffers(av);
+		return (NULL);
+	}
+	if ((av->key = ft_memalloc(PAGE_SIZE)) == NULL)	/* XXX */
+	{
+		cleanup_av_buffers(av);
+		return (NULL);
+	}
+	av->val = NULL;
+	return (av);
+}
+
+#define STRONG_QUOTE		0x27
+#define SQ					STRONG_QUOTE
+#define WEAK_QUOTE			0x22
+#define	WQ					WEAK_QUOTE
+#define BACKSLASH			0x5c
+#define EMPTY_STRING		""
+#define UNMATCHED_QUOTE		"Unmatched %c.\n"
+#define UNDEFINED_VARIABLE	"%s: Undefined variable.\n"
+#define DOLLAR_SIGN			'$'
+
+int	unmatched_quote_error(t_av *av, char quote)
+{
+	cleanup_av_buffers(av);
+	ft_printf(STDERR_FILENO, UNMATCHED_QUOTE, quote);
+	return (0);
+}
+
+int	handle_strong_quote(t_av *av, int *i, int *k)
+{
+	char	*in;
+	char	*out;
+
+	in = av->in;
+	out = av->out;
+	(*i)++;
+	if ((ft_strchr(&in[*i], STRONG_QUOTE)) == NULL)
+		return (unmatched_quote_error(av, STRONG_QUOTE));
+	while (in[*i] != STRONG_QUOTE)
+		out[(*k)++] = in[(*i)++];
+	(*i)++;
+	return (1);
+}
+
+int	handle_dollar_sign(t_av *av, t_shell *sh, int *i, int *k)
+{
+	int		z;
+	int		result;
+
+	(*i)++;
+	z = 0;
+	result = 1;
+	while (ft_isalnum2(av->in[*i + z]))
+		z++;
+	ft_strncpy(av->key, &(av->in[*i]), z);
+	av->key[z] = 0;
+	av->val = kv_array_get_key_value(sh->envp, av->key);
+	if (av->val == NULL)
+	{
+		ft_printf(STDERR_FILENO, UNDEFINED_VARIABLE, av->key);
+		av->val = EMPTY_STRING;
+		result = 0;
+	}
+	z = 0;
+	while (av->val[z])
+		av->out[(*k)++] = av->val[z++];
+	(*i) += ft_strlen(av->key);
+	return (result);
+}
+
+int	handle_weak_quote(t_av *av, t_shell *sh, int *i, int *k)
+{
+	char	*in;
+	char	*out;
+
+	in = av->in;
+	out = av->out;
+	(*i)++;
+	if ((ft_strchr(&av->in[*i], WEAK_QUOTE)) == NULL)
+		return (unmatched_quote_error(av, WEAK_QUOTE));
+	while (av->in[*i] != WEAK_QUOTE)
+	{
+		if ((av->in[*i] == DOLLAR_SIGN) && (ft_isalpha(av->in[*i + 1])))
+			(void)handle_dollar_sign(av, sh, i, k);
+		else
+			out[(*k)++] = in[(*i)++];
+	}
+	(*i)++;
+	return (1);
+}
+
+void	add_string_to_child_argv(t_shell *sh, char *str, int *k)
 {
 	char **old_array;
 	char *new_string;
 
+	if ((str == NULL) || (str[0] == 0))
+		return ;
+	str[*k] = 0;
+	*k = 0;
 	old_array = sh->child_argv;
 	new_string = ft_strdup(str);
 	sh->child_argv = add_element_to_char_array(sh->child_argv, new_string);
 	destroy_char_array(old_array);
 }
 
-
-
-void	build_child_argv_list(t_shell *sh)
+int build_child_argv_list(t_shell *sh, int i, int k, int sub_op)
 {
-	int	i;
-	int k;
-	int j;
-	int	flag;
-	char	*key_name;
-	char	*value;
-	char	*str;
-	char	*buffer;
+	t_av	*av;
 
-	str = sh->buffer;
-
-#define STRONG_Q		0x27
-#define WEAK_Q			0x22
-#define BACKSLASH		0x5c
-#define EMPTY_STRING	""
-
-	buffer = ft_memalloc(PAGE_SIZE * 2);	/* XXX buffer for argument*/
-	key_name = ft_memalloc(PAGE_SIZE);	/* XXX */
-	i = 0;
-	k = 0;
-	flag = 0;
-
-	while ((str[i]) && (ft_isspace(str[i])))
+	av = init_av_buffers(sh);
+	while ((av->in[i]) && (ft_isspace(av->in[i])))
 		i++;
-	while (str[i])
+	while (av->in[i])
 	{
-//////////////////////////////////////////////////////////////////////////////////////////
-		if (str[i] == STRONG_Q)
-		{
-			flag = 1;
-			i++;
-			if (ft_strchr(&str[i], STRONG_Q) == NULL)
-			{
-				//error, return
-				ft_printf(STDERR_FILENO, "Unmatched '.\n");
-			}
-			while (str[i] != STRONG_Q)
-				buffer[k++] = str[i++];
-			i++;
-			if ((ft_isspace(str[i])) || (str[i] == 0))
-			{
-				buffer[k] = 0;
-				//char	**add_element_to_char_array(char **array, char *string)
-				add_string_to_child_argv(sh, buffer);				//done with this argument, get next
-				k = 0;
-			}
-			continue ;
-		}
-//////////////////////////////////////////////////////////////////////////////////////////
-		else if (str[i] == WEAK_Q)
-		{
-			flag = 2;
-			i++;
-			if (ft_strchr(&str[i], WEAK_Q) == NULL)
-			{
-				//error, return
-				ft_printf(STDERR_FILENO, "Unmatched \".\n");
-			}
-			while (str[i] != WEAK_Q)
-			{
-				if ((str[i] == '$') && (ft_isalpha(str[i + 1])))
-				{
-					i++;
-					j = 0;
-					while (ft_isalnum2(str[i + j]))
-						j++;
-					ft_strncpy(key_name, &str[i], j);
-					key_name[j] = 0;
-					value = kv_array_get_key_value(sh->envp, key_name);
-					if (!value)
-					{
-						//error	.. no such variable, return
-						ft_printf(STDERR_FILENO, "%s: Undefined variable.\n", key_name);
-						value = EMPTY_STRING;
-						// return
-					}
-					j = 0;
-					while (value[j])
-						buffer[k++] = value[j++];
-					i += ft_strlen(key_name);
-					continue;
-				}
-				else
-					buffer[k++] = str[i++];
-			}
-			i++;
-			if ((ft_isspace(str[i])) || (str[i] == 0))
-			{
-				buffer[k] = 0;
-				//char	**add_element_to_char_array(char **array, char *string)
-				add_string_to_child_argv(sh, buffer);				//done with this argument, get next
-				k = 0;
-			}
-			continue ;
-		}
-	//////////////////////////////////////////////////////////////////////////////////////////
-		else if (str[i] == BACKSLASH)
-		{
-			i++;
-			buffer[k++] = str[i++];
-		}
-	//////////////////////////////////////////////////////////////////////////////////////////
-
-
-		else if ((str[i] == '$') && (ft_isalpha(str[i + 1])))
-		{
-			i++;
-			j = 0;
-			while (ft_isalnum2(str[i + j]))
-				j++;
-			ft_strncpy(key_name, &str[i], j);
-			key_name[j] = 0;
-			value = kv_array_get_key_value(sh->envp, key_name);
-			if (!value)
-			{
-				//error	.. no such variable, return
-				ft_printf(STDERR_FILENO, "%s: Undefined variable.\n", key_name);
-				value = EMPTY_STRING;
-				// return
-			}
-			j = 0;
-			while (value[j])
-				buffer[k++] = value[j++];
-			i += ft_strlen(key_name);
-		}
-
+		if (av->in[i] == SQ)
+			sub_op = handle_strong_quote(av, &i, &k);
+		else if (av->in[i] == WQ)
+			sub_op = handle_weak_quote(av, sh, &i, &k);
+		else if ((av->in[i] == DOLLAR_SIGN) && (ft_isalpha(av->in[i + 1])))
+			sub_op = handle_dollar_sign(av, sh, &i, &k);
+		else if ((av->in[i] == BACKSLASH) && (i++))
+			av->out[k++] = av->in[i++];
 		else
-			buffer[k++] = str[i++];
-
-		if ((ft_isspace(str[i])) || (str[i] == 0))
-		{
-			buffer[k] = 0;
-			add_string_to_child_argv(sh, buffer);				//done with this argument, get next
-			k = 0;
-			while ((str[i]) && (ft_isspace(str[i])))
-				i++;
-		}
+			av->out[k++] = av->in[i++];
+		if (sub_op == 0)
+			return (0);
+		if ((ft_isspace(av->in[i])) || (av->in[i] == 0))
+			add_string_to_child_argv(sh, av->out, &k);
+		while ((av->in[i]) && (ft_isspace(av->in[i])))
+			i++;
 	}
-	free(buffer);
-	free(key_name);
+	cleanup_av_buffers(av);
+	return (1);
 }
 
 int		main(int argc, char **argv, char **envp)
@@ -686,14 +688,14 @@ int		main(int argc, char **argv, char **envp)
 	int		i, j;
 	int		builtin;
 
-	sh = init(argc, argv, envp);
+	sh = init_shell(argc, argv, envp);
 	while (1)
 	{
 		get_input(sh);
 		i = 0;
 		sh->child_argv = ft_memalloc(sizeof(char *));
 		sh->child_argv[0] = NULL;
-		build_child_argv_list(sh);
+		build_child_argv_list(sh, 0, 0, 1);
 		j = 0;
 		while (sh->child_argv[j])
 		{
