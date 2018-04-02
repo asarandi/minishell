@@ -2,7 +2,7 @@ NAME		= minishell
 SRC			= main.c
 OBJ			= $(SRC:%.c=%.o)
 CC			= gcc
-FLAGS		= -g -Wextra -Wall -Werror
+FLAGS		= -g -Wextra -Wall -Werror # -fsanitize=address
 INC			= -I libft/ -I libft/ft_printf/
 LIB			= -L libft/ -lft -L libft/ft_printf/ -lftprintf
 

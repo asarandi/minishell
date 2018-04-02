@@ -1,8 +1,8 @@
 --minishell--
-	add code for getting/setting environment variable key/values
-	add code for looking for binaries in all $PATH folder
-	implement all builtin functions
-	implement execution of external binaries
+DONE	add code for getting/setting environment variable key/values
+DONE	add code for looking for binaries in all $PATH folder
+PARTIAL	implement all builtin functions
+DONE	implement execution of external binaries
 	norme
 
 -42sh--

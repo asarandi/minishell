@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/02 00:56:02 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/02 04:52:07 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,6 +97,11 @@ void	builtin_cd(t_shell *sh)
 	{
 		if ((path = kv_array_get_key_value(sh->envp, "HOME")) == NULL)
 			return ((void)ft_printf(STDERR_FILENO, E_NOVARIABLE, "$HOME"));
+	}
+	else if ((ft_strcmp(sh->child_argv[1], "-")) == 0)
+	{
+		if ((path = kv_array_get_key_value(sh->envp, "OLDPWD")) == NULL)
+			return ((void)ft_printf(STDERR_FILENO, E_NOVARIABLE, "$OLDPWD"));
 	}
 	else
 		path = sh->child_argv[1];
@@ -772,17 +777,29 @@ void	fork_exec_wait(t_shell *sh, char *fullpath)
 	waitpid(child, NULL, 0);
 }
 
+int		is_fullpath_provided(char *fullpath)
+{
+	if (access(fullpath, F_OK | X_OK) == 0)
+		return (1);
+	return (0);
+}
+
 void	execute_external_cmd(t_shell *sh)
 {
 	char	*path;
 	char	*fullpath;
 
-	if ((path = find_command_path(sh, sh->child_argv[0])) == NULL)
-		return ((void)ft_printf(STDERR_FILENO, E_NOTFOUND, sh->child_argv[0]));
-	fullpath = dir_slash_exec(path, sh->child_argv[0]);
-	fork_exec_wait(sh, fullpath);
-	free(path);
-	free(fullpath);
+	if (is_fullpath_provided(sh->child_argv[0]) == 1)
+		fork_exec_wait(sh, sh->child_argv[0]);
+	else
+	{
+		if ((path = find_command_path(sh, sh->child_argv[0])) == NULL)
+			return ((void)ft_printf(STDERR_FILENO, E_NOTFOUND, sh->child_argv[0]));
+		fullpath = dir_slash_exec(path, sh->child_argv[0]);
+		fork_exec_wait(sh, fullpath);
+		free(path);
+		free(fullpath);
+	}
 }
 
 int		main(int argc, char **argv, char **envp)
