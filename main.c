@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/01 19:13:57 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/01 21:22:59 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,19 +23,26 @@ typedef struct	s_shell
 }				t_shell;
 */
 
-#define	SHELL_PROMPT	"$> "
-#define	SHELL_NAME		"minishell"
-#define PAGE_SIZE		4096
-#define E_NOMEM			"out of memory"
-#define E_READFAIL		"read() failed"
-#define E_GNLFAIL		"get_next_line() failed"
-#define	E_ALNUM			"Variable name must contain alphanumeric characters."
-#define E_TOOMANY		"Too many arguments."
-#define E_TOOFEW		"Too few arguments."
-#define E_LETTER		"Variable name must begin with a letter."
-
-
-#define NUM_BUILTINS	7
+#define	SHELL_PROMPT		"$> "
+#define	SHELL_NAME			"minishell"
+#define PAGE_SIZE			4096
+#define E_NOMEM				"out of memory"
+#define E_READFAIL			"read() failed"
+#define E_GNLFAIL			"get_next_line() failed"
+#define	E_ALNUM				"Variable name must contain alphanumeric characters."
+#define E_TOOMANY			"Too many arguments."
+#define E_TOOFEW			"Too few arguments."
+#define E_LETTER			"Variable name must begin with a letter."
+#define	E_NOTFOUND			"%s: Command not found.\n"
+#define E_FORK				"fork() failed"
+#define UNDEFINED_VARIABLE	"%s: Undefined variable.\n"
+#define UNMATCHED_QUOTE		"Unmatched %c.\n"
+#define STRONG_QUOTE		0x27
+#define WEAK_QUOTE			0x22
+#define BACKSLASH			0x5c
+#define EMPTY_STRING		""
+#define DOLLAR_SIGN			'$'
+#define NUM_BUILTINS		7
 
 const char *builtin_list[] = {
 	"echo", "cd", "setenv", "unsetenv", "env", "exit", "help"};
@@ -556,15 +563,6 @@ t_av	*init_av_buffers(t_shell *sh)
 	return (av);
 }
 
-#define STRONG_QUOTE		0x27
-#define SQ					STRONG_QUOTE
-#define WEAK_QUOTE			0x22
-#define	WQ					WEAK_QUOTE
-#define BACKSLASH			0x5c
-#define EMPTY_STRING		""
-#define UNMATCHED_QUOTE		"Unmatched %c.\n"
-#define UNDEFINED_VARIABLE	"%s: Undefined variable.\n"
-#define DOLLAR_SIGN			'$'
 
 int	unmatched_quote_error(t_av *av, char quote)
 {
@@ -660,9 +658,9 @@ int build_child_argv_list(t_shell *sh, int i, int k, int sub_op)
 		i++;
 	while (av->in[i])
 	{
-		if (av->in[i] == SQ)
+		if (av->in[i] == STRONG_QUOTE)
 			sub_op = handle_strong_quote(av, &i, &k);
-		else if (av->in[i] == WQ)
+		else if (av->in[i] == WEAK_QUOTE)
 			sub_op = handle_weak_quote(av, sh, &i, &k);
 		else if ((av->in[i] == DOLLAR_SIGN) && (ft_isalpha(av->in[i + 1])))
 			sub_op = handle_dollar_sign(av, sh, &i, &k);
@@ -681,21 +679,104 @@ int build_child_argv_list(t_shell *sh, int i, int k, int sub_op)
 	return (1);
 }
 
+char	*dir_slash_exec(char *dir, char *cmd)
+{
+	char	*result;
+	char	*folder;
+
+	if (dir[ft_strlen(dir) - 1] != '/')
+		folder = ft_strjoin(dir, "/");
+	else
+		folder = ft_strdup(dir);
+	result = ft_strjoin(folder, cmd);
+	free(folder);
+	return (result);
+}
+int		path_has_executable(char *path, char *cmd)
+{
+	char	*fullpath;
+	int		result;
+
+	fullpath = dir_slash_exec(path, cmd);
+	result = 0;
+	if (access(fullpath, F_OK | X_OK) == 0)
+		result = 1;
+	free(fullpath);
+	return (result);
+}
+
+char	*find_command_path(t_shell *sh, char *cmd)
+{
+	char	**folders;
+	char	*path;
+	char	*result;
+	int		i;
+
+	if ((path = kv_array_get_key_value(sh->envp, "PATH")) == NULL)
+		return (NULL);
+	if ((folders = ft_strsplit(path, ':')) == NULL)
+		fatal_error_message(sh, E_NOMEM);
+	i = 0;
+	result = NULL;
+	while (folders[i])
+	{
+		if (path_has_executable(folders[i], cmd) == 1)
+		{
+			result = ft_strdup(folders[i]);
+			break ;
+		}
+		i++;
+	}
+	destroy_char_array(folders);
+	return (result);
+}
+
+
+void	fork_exec_wait(t_shell *sh, char *fullpath)
+{
+	pid_t	child;
+
+	if ((child = fork()) == -1)
+		fatal_error_message(sh, E_FORK);
+	else if (child == 0)
+		execve(fullpath, sh->child_argv, sh->envp);
+	waitpid(child, NULL, 0);
+}
+
+void	execute_external_cmd(t_shell *sh)
+{
+	char	*path;
+	char	*fullpath;
+
+	if ((path = find_command_path(sh, sh->child_argv[0])) == NULL)
+		return ((void)ft_printf(STDERR_FILENO, E_NOTFOUND, sh->child_argv[0]));
+	fullpath = dir_slash_exec(path, sh->child_argv[0]);
+	fork_exec_wait(sh, fullpath);
+	free(path);
+	free(fullpath);
+}
+
 int		main(int argc, char **argv, char **envp)
 {
 	t_shell	*sh;
-	char	*argument;
-	int		i, j;
-	int		builtin;
+	int		r;
 
 	sh = init_shell(argc, argv, envp);
 	while (1)
 	{
 		get_input(sh);
-		i = 0;
+		if (sh->buffer == NULL)
+			break ;
 		sh->child_argv = ft_memalloc(sizeof(char *));
 		sh->child_argv[0] = NULL;
 		build_child_argv_list(sh, 0, 0, 1);
+		if ((r = builtin_cmd_index(sh->child_argv[0])) != -1)
+			(void)builtin_functions[r](sh);
+		else
+			(void)execute_external_cmd(sh);
+
+
+/*		
 		j = 0;
 		while (sh->child_argv[j])
 		{
@@ -714,14 +795,10 @@ int		main(int argc, char **argv, char **envp)
 			else
 				builtin = 0;					//run external command
 		}
+*/
 
 		destroy_char_array(sh->child_argv);
-
-		if (ft_strcmp(sh->buffer, "exit") == 0)
-			break ;
-//		execute(sh);
-		if (sh->buffer != NULL)
-			free(sh->buffer);
+		free(sh->buffer);
 	}
 	clean_up(sh);
 	return (0);

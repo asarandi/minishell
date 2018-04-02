@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/01 18:47:24 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/01 21:18:17 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,8 @@
 
 #include "libft.h"
 #include "libftprintf.h"
-#include <term.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 typedef struct	s_av
 {
