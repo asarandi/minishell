@@ -30,6 +30,8 @@ typedef struct	s_shell
 #define E_READFAIL			"read() failed"
 #define E_GNLFAIL			"get_next_line() failed"
 #define E_CWDFAIL			"getcwd() failed"
+#define	E_NOVARIABLE		"No %s variable set.\n"
+#define E_CHDIRFAIL			"chdir() failed\n"
 #define	E_ALNUM				"Variable name must contain alphanumeric characters."
 #define E_TOOMANY			"Too many arguments."
 #define E_TOOMANY2			"%s: Too many arguments.\n"
@@ -81,11 +83,6 @@ void	builtin_echo(t_shell *sh)
 		ft_printf(STDOUT_FILENO, "\n");
 }
 
-
-#define	E_NOVARIABLE		"No %s variable set.\n"
-#define E_CHDIRFAIL			"chdir() failed\n"
-
-
 void	builtin_cd(t_shell *sh)
 {
 	char	*cwd;
@@ -105,15 +102,19 @@ void	builtin_cd(t_shell *sh)
 	}
 	else
 		path = sh->child_argv[1];
-	if ((cwd = getcwd(NULL, 0)) == NULL)
-		ft_printf(STDERR_FILENO, "%s\n", E_CWDFAIL);
-	else
+	cwd = NULL;
+	cwd = getcwd(NULL, 0);
+	if (chdir(path) == -1)
+	{
+		if (cwd != NULL)
+			free(cwd);
+		return ((void)ft_printf(STDERR_FILENO, E_CHDIRFAIL));
+	}
+	if (cwd != NULL)
 	{
 		kv_array_set_key_value(&sh->envp, "OLDPWD", cwd);
 		free(cwd);
 	}
-	if (chdir(path) == -1)
-		return ((void)ft_printf(STDERR_FILENO, E_CHDIRFAIL));
 	if ((cwd = getcwd(NULL, 0)) == NULL)
 		ft_printf(STDERR_FILENO, "%s\n", E_CWDFAIL);
 	else
