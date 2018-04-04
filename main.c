@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/02 04:52:07 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/04 14:36:24 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -241,6 +241,7 @@ void	builtin_help(t_shell *sh)
 
 void	clean_up(t_shell *sh)
 {
+	termios_restore_settings(sh);
 	if (sh->envp != NULL)
 		destroy_char_array(sh->envp);
 	if (sh->child_argv != NULL)
@@ -424,6 +425,7 @@ t_shell	*init_shell(int argc, char **argv, char **envp)
 	sh->argc = argc;
 	sh->argv = argv;
 	sh->envp = create_char_array_copy(envp, 0);
+	(void)termios_save_settings(sh);
 	return (sh);
 }
 
@@ -803,6 +805,62 @@ void	execute_external_cmd(t_shell *sh)
 	}
 }
 
+void	termios_save_settings(t_shell *sh)
+{
+	if (tcgetattr(STDIN_FILENO, &sh->t_original) == -1)
+		return (fatal_error_message(sh, "tcgetattr() failed"));	
+	sh->t_custom = sh->t_original;
+	sh->t_custom.c_cc[VMIN] = 1;
+	sh->t_custom.c_cc[VTIME] = 0;
+	sh->t_custom.c_lflag &= ~(ICANON | ECHO);
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &sh->t_custom) == -1)
+		return (fatal_error_message(sh, "tcsetattr() failed"));
+	sh->custom_terminal = 1;
+	return ;
+}
+
+void	termios_restore_settings(t_shell *sh)
+{
+	if (sh->custom_terminal == 1)
+		tcsetattr(STDIN_FILENO, TCSANOW, &sh->t_original);
+	return ;
+}
+
+void	increase_buffer(t_shell *sh)
+{
+	char	*tmp;
+
+	tmp	= ft_memalloc(sh->bufsize + PAGE_SIZE);
+	(void)ft_strncpy(tmp, sh->buffer, sh->bufsize);
+	free(sh->buffer);
+	sh->buffer = tmp;
+	sh->bufsize += PAGE_SIZE;
+	return ;
+}
+
+void	raw_read(t_shell *sh)
+{
+	size_t	i;
+
+	ft_printf(STDOUT_FILENO, "%s", SHELL_PROMPT);
+	sh->buffer = ft_memalloc(PAGE_SIZE);	/* XXX */
+	sh->bufsize = PAGE_SIZE;
+	i = 0;
+	while(1)
+	{
+		if (read(STDIN_FILENO, &sh->buffer[i], 1) < 0)
+			break ;
+		if (ft_isprint(sh->buffer[i]))
+			ft_printf(STDOUT_FILENO, "%c", sh->buffer[i]);
+		if (sh->buffer[i] == '\n')
+			break ;
+		i++;
+		if (i >= sh->bufsize)
+			(void)increase_buffer(sh);
+	}
+	return ;
+}
+
 int		main(int argc, char **argv, char **envp)
 {
 	t_shell	*sh;
@@ -811,7 +869,7 @@ int		main(int argc, char **argv, char **envp)
 	sh = init_shell(argc, argv, envp);
 	while (1)
 	{
-		get_input(sh);
+		raw_read(sh);
 		if (sh->buffer == NULL)
 			break ;
 		sh->child_argv = ft_memalloc(sizeof(char *));
@@ -827,7 +885,7 @@ int		main(int argc, char **argv, char **envp)
 
 /*		
 		j = 0;
-		while (sh->child_argv[j])
+		while (sh->child_argv[j]):
 		{
 			ft_printf(1, "child argv[%d] = %s\n", j, sh->child_argv[j]);
 			j++;
@@ -849,6 +907,7 @@ int		main(int argc, char **argv, char **envp)
 		destroy_char_array(sh->child_argv);
 		sh->child_argv = NULL;
 		free(sh->buffer);
+		sh->buffer = NULL;
 	}
 	clean_up(sh);
 	return (0);
