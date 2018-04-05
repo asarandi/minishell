@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/05 03:12:31 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/05 04:12:35 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@ typedef struct	s_shell
 	char		keycode[10];
 	size_t		cursor;
 	char		*carriage_return;
+	char		*clear_down;
 	char		*cursor_move_left;
 	char		*cursor_move_right;
 	char		*cursor_move_down;
@@ -110,6 +111,7 @@ void	key_up_arrow_function(t_shell *sh);
 void	kv_array_remove_key(char **array, char *key);
 void	kv_array_set_key_value(char ***array, char *key, char *value);
 void	raw_read(t_shell *sh);
+void	reprint_input(t_shell *sh);
 void	terminal_init(t_shell *sh);
 void	termios_restore_settings(t_shell *sh);
 void	termios_save_settings(t_shell *sh);

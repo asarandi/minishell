@@ -895,19 +895,20 @@ void	terminal_init(t_shell *sh)
 	sh->cursor_move_right = tgetstr("nd", NULL);
 	sh->cursor_move_down = tgetstr("do", NULL);
 	sh->cursor_move_up = tgetstr("up", NULL);
+	sh->clear_down = tgetstr("cd", NULL);
 	(void)termios_save_settings(sh);
 	return ;
 }
 
 void	key_up_arrow_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "up arrow key\n");
+	ft_printf(STDOUT_FILENO, "[up arrow key]");
 	sh->buf_i += 0;
 }
 
 void	key_down_arrow_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "down arrow key\n");
+	ft_printf(STDOUT_FILENO, "[down arrow key]");
 	sh->buf_i += 0;
 }
 
@@ -933,26 +934,59 @@ void	key_right_arrow_function(t_shell *sh)
 
 void	key_backspace_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "backspace key\n");
-	sh->buf_i += 0;
+	size_t	tempo;
+//	ft_printf(STDOUT_FILENO, "backspace key\n");
+	if (sh->buf_i > 0)
+	{
+		key_left_arrow_function(sh);
+		tempo = sh->buf_i;
+		while (tempo < sh->input_size)
+		{
+			sh->buffer[tempo] = sh->buffer[tempo + 1];
+			tempo++;
+		}
+		sh->buffer[tempo] = 0;
+		sh->input_size--;
+		reprint_input(sh);
+	}
 }
 
 void	key_delete_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "delete key\n");
-	sh->buf_i += 0;			
+//	ft_printf(STDOUT_FILENO, "delete key\n");
+//	sh->buf_i += 0;			
+
+	size_t	tempo;
+//	ft_printf(STDOUT_FILENO, "backspace key\n");
+	if (sh->input_size > 0)
+	{
+//		key_left_arrow_function(sh);
+		tempo = sh->buf_i;
+		while (tempo < sh->input_size)
+		{
+			sh->buffer[tempo] = sh->buffer[tempo + 1];
+			tempo++;
+		}
+		sh->buffer[tempo] = 0;
+		sh->input_size--;
+		reprint_input(sh);
+	}
+
+
 }
 
 void	key_ctrl_a_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "ctrl + a\n");
-	sh->buf_i += 0;
+//	ft_printf(STDOUT_FILENO, "ctrl + a\n");
+	sh->buf_i = 0;
+	reprint_input(sh);
 }
 
 void	key_ctrl_e_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "ctrl + e\n");
-	sh->buf_i += 0;
+//	ft_printf(STDOUT_FILENO, "ctrl + e\n");
+	sh->buf_i = sh->input_size;
+	reprint_input(sh);
 }
 
 void	key_ctrl_k_function(t_shell *sh)
@@ -1005,7 +1039,9 @@ void	reprint_input(t_shell *sh)
 {
 	int	move_left;
 
-	write(1, sh->carriage_return, ft_strlen(sh->carriage_return));
+//	write(1, sh->carriage_return, ft_strlen(sh->carriage_return));
+	ft_putstr(sh->carriage_return);
+	ft_putstr(sh->clear_down);
 	display_shell_prompt();
 	ft_printf(STDOUT_FILENO, sh->buffer);
 	move_left = ft_strlen(sh->buffer) - sh->buf_i;
