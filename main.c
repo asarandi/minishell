@@ -958,7 +958,7 @@ void	key_delete_function(t_shell *sh)
 
 	size_t	tempo;
 //	ft_printf(STDOUT_FILENO, "backspace key\n");
-	if (sh->input_size > 0)
+	if (sh->input_size > sh->buf_i)
 	{
 //		key_left_arrow_function(sh);
 		tempo = sh->buf_i;
