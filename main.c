@@ -1,3 +1,4 @@
+
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -6,7 +7,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/04 14:36:24 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/04 20:11:18 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -425,7 +426,7 @@ t_shell	*init_shell(int argc, char **argv, char **envp)
 	sh->argc = argc;
 	sh->argv = argv;
 	sh->envp = create_char_array_copy(envp, 0);
-	(void)termios_save_settings(sh);
+	terminal_init(sh);
 	return (sh);
 }
 
@@ -838,24 +839,236 @@ void	increase_buffer(t_shell *sh)
 	return ;
 }
 
-void	raw_read(t_shell *sh)
-{
-	size_t	i;
+#define	KEY_UP_ARROW		"\e[A"
+#define KEY_DOWN_ARROW		"\e[B"
+#define	KEY_LEFT_ARROW		"\e[D"
+#define	KEY_RIGHT_ARROW		"\e[C"
+#define KEY_BACKSPACE		"\x7f"
+#define KEY_DELETE			"\e[3~"
+#define KEY_CTRL_A			"\x01"
+#define KEY_CTRL_E			"\x05"
+#define KEY_CTRL_K			"\x0b"
+#define KEY_CTRL_L			"\x0c"
+#define KEY_TAB				"\x09"
 
+
+const char *special_keys[] = {
+		KEY_UP_ARROW,
+		KEY_DOWN_ARROW,
+		KEY_LEFT_ARROW,
+		KEY_RIGHT_ARROW,
+		KEY_BACKSPACE,
+		KEY_DELETE,
+		KEY_CTRL_A,
+		KEY_CTRL_E,
+		KEY_CTRL_K,
+		KEY_CTRL_L,
+		KEY_TAB
+};
+
+void	(*special_key_functions[]) (t_shell *) = 
+{
+	&key_up_arrow_function,
+	&key_down_arrow_function,
+	&key_left_arrow_function,
+	&key_right_arrow_function,
+	&key_backspace_function,
+	&key_delete_function,
+	&key_ctrl_a_function,
+	&key_ctrl_e_function,
+	&key_ctrl_k_function,
+	&key_ctrl_l_function,
+	&key_tab_function
+};
+
+void	terminal_init(t_shell *sh)
+{
+	char	buf[1024];
+	char	*term;
+
+	term = kv_array_get_key_value(sh->envp, "TERM");
+	if (term == NULL)
+		term = "xterm";
+	tgetent(buf, term);
+	sh->carriage_return = tgetstr("cr", NULL);
+	sh->cursor_move_left = tgetstr("le", NULL);
+	sh->cursor_move_right = tgetstr("nd", NULL);
+	sh->cursor_move_down = tgetstr("do", NULL);
+	sh->cursor_move_up = tgetstr("up", NULL);
+	(void)termios_save_settings(sh);
+	return ;
+}
+
+void	key_up_arrow_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "up arrow key\n");
+	sh->buf_i += 0;
+}
+
+void	key_down_arrow_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "down arrow key\n");
+	sh->buf_i += 0;
+}
+
+void	key_left_arrow_function(t_shell *sh)
+{
+//	ft_printf(STDOUT_FILENO, "left arrow key\n");
+	if (sh->buf_i > 0)
+	{
+		sh->buf_i--;
+		ft_putstr(sh->cursor_move_left);
+	}
+}
+
+void	key_right_arrow_function(t_shell *sh)
+{
+//	ft_printf(STDOUT_FILENO, "right arrow key\n");
+	if (sh->buf_i < sh->input_size)
+	{
+		sh->buf_i++;
+		ft_putstr(sh->cursor_move_right);
+	}
+}
+
+void	key_backspace_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "backspace key\n");
+	sh->buf_i += 0;
+}
+
+void	key_delete_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "delete key\n");
+	sh->buf_i += 0;			
+}
+
+void	key_ctrl_a_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "ctrl + a\n");
+	sh->buf_i += 0;
+}
+
+void	key_ctrl_e_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "ctrl + e\n");
+	sh->buf_i += 0;
+}
+
+void	key_ctrl_k_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "ctrl + k\n");
+	sh->buf_i += 0;
+}
+
+void	key_ctrl_l_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "ctrl + l\n");
+	sh->buf_i += 0;
+}
+
+void	key_tab_function(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO, "tab\n");
+	sh->buf_i += 0;
+}
+
+void	check_special_keys(t_shell *sh)
+{
+	int			size;
+	int			i;
+	const char	*key;
+	int			len;
+
+	i = 0;
+	size = sizeof(special_keys) / sizeof(char *);
+	while (i < size)
+	{
+		key = special_keys[i];
+		len = ft_strlen(key);
+		if (ft_strncmp(key, sh->keycode, len) == 0)
+		{
+			(void)ft_bzero(sh->keycode, 9);
+			return (special_key_functions[i](sh));
+		}
+		i++;
+	}
+	return ;
+}
+
+void	display_shell_prompt()
+{
 	ft_printf(STDOUT_FILENO, "%s", SHELL_PROMPT);
+}
+
+void	reprint_input(t_shell *sh)
+{
+	int	move_left;
+
+	write(1, sh->carriage_return, ft_strlen(sh->carriage_return));
+	display_shell_prompt();
+	ft_printf(STDOUT_FILENO, sh->buffer);
+	move_left = ft_strlen(sh->buffer) - sh->buf_i;
+	while (move_left--)
+		ft_putstr(sh->cursor_move_left);
+}
+
+void	insert_key_into_buffer(t_shell *sh)
+{
+	//insert character into sh->buffer at position sh->buf_i
+	//if necessary shift buffer to right
+	//move cursor to the left,
+	//print shell prompt
+	//print contents of buffer
+	size_t	size;
+
+	if (sh->buffer[sh->buf_i] != 0)
+	{
+		size = sh->input_size;
+//		ft_printf(1, "size = %zu, buf_i = %zu\n", size, sh->buf_i);
+		while (size > sh->buf_i)
+		{
+			sh->buffer[size] = sh->buffer[size - 1];
+			size--;
+		}
+	}
+	sh->buffer[sh->buf_i++] = sh->keycode[0];
+	sh->input_size++;
+	reprint_input(sh);
+
+}
+
+void	end_of_input(t_shell *sh)
+{
+	ft_printf(STDOUT_FILENO,  "\n");
+	sh->buf_i += 0;
+	return ;
+}
+
+void	init_input_buffer(t_shell *sh)
+{
 	sh->buffer = ft_memalloc(PAGE_SIZE);	/* XXX */
 	sh->bufsize = PAGE_SIZE;
-	i = 0;
+	sh->buf_i = 0;
+	sh->input_size = 0;
+	display_shell_prompt();
+}
+
+
+void	raw_read(t_shell *sh)
+{
+	init_input_buffer(sh);
 	while(1)
 	{
-		if (read(STDIN_FILENO, &sh->buffer[i], 1) < 0)
+		if (read(STDIN_FILENO, &sh->keycode, 9) < 0)
 			break ;
-		if (ft_isprint(sh->buffer[i]))
-			ft_printf(STDOUT_FILENO, "%c", sh->buffer[i]);
-		if (sh->buffer[i] == '\n')
-			break ;
-		i++;
-		if (i >= sh->bufsize)
+		if (ft_isprint(sh->keycode[0]))
+			insert_key_into_buffer(sh);
+		else if (sh->keycode[0] == '\n')
+			return end_of_input(sh);
+		else
+			check_special_keys(sh);
+		if (sh->input_size >= sh->bufsize)
 			(void)increase_buffer(sh);
 	}
 	return ;
