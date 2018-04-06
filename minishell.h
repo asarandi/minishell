@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/05 04:12:35 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/06 03:30:58 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,9 @@
 #include "libft.h"
 #include "libftprintf.h"
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <termios.h>
 #include <termcap.h>
 
@@ -38,15 +40,21 @@ typedef struct	s_shell
 	size_t		bufsize;
 	size_t		input_size;
 	size_t		buf_i;
+	char		*partial_input;
+	char		**history;
+	int			history_count;
+	int			history_i;
 	char		keycode[10];
 	size_t		cursor;
 	char		*carriage_return;
 	char		*clear_down;
+	char		*clear_till_eol;
+	char		*clear_all;
 	char		*cursor_move_left;
 	char		*cursor_move_right;
 	char		*cursor_move_down;
 	char		*cursor_move_up;
-	char		**child_argv;
+	char		**child_argv;	
 	struct termios	t_original;
 	struct termios	t_custom;
 	int			custom_terminal;

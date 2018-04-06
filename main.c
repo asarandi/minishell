@@ -48,6 +48,48 @@ typedef struct	s_shell
 #define EMPTY_STRING		""
 #define DOLLAR_SIGN			'$'
 #define NUM_BUILTINS		7
+#define	HISTORY_FILE		".minishell_history"
+#define	KEY_UP_ARROW		"\e[A"
+#define KEY_DOWN_ARROW		"\e[B"
+#define	KEY_LEFT_ARROW		"\e[D"
+#define	KEY_RIGHT_ARROW		"\e[C"
+#define KEY_BACKSPACE		"\x7f"
+#define KEY_DELETE			"\e[3~"
+#define KEY_CTRL_A			"\x01"
+#define KEY_CTRL_E			"\x05"
+#define KEY_CTRL_K			"\x0b"
+#define KEY_CTRL_L			"\x0c"
+#define KEY_TAB				"\x09"
+
+
+const char *special_keys[] = {
+		KEY_UP_ARROW,
+		KEY_DOWN_ARROW,
+		KEY_LEFT_ARROW,
+		KEY_RIGHT_ARROW,
+		KEY_BACKSPACE,
+		KEY_DELETE,
+		KEY_CTRL_A,
+		KEY_CTRL_E,
+		KEY_CTRL_K,
+		KEY_CTRL_L,
+		KEY_TAB
+};
+
+void	(*special_key_functions[]) (t_shell *) = 
+{
+	&key_up_arrow_function,
+	&key_down_arrow_function,
+	&key_left_arrow_function,
+	&key_right_arrow_function,
+	&key_backspace_function,
+	&key_delete_function,
+	&key_ctrl_a_function,
+	&key_ctrl_e_function,
+	&key_ctrl_k_function,
+	&key_ctrl_l_function,
+	&key_tab_function
+};
 
 const char *builtin_list[] = {
 	"echo", "cd", "setenv", "unsetenv", "env", "exit", "help"};
@@ -245,6 +287,8 @@ void	clean_up(t_shell *sh)
 	termios_restore_settings(sh);
 	if (sh->envp != NULL)
 		destroy_char_array(sh->envp);
+	if (sh->history != NULL)
+		destroy_char_array(sh->history);
 	if (sh->child_argv != NULL)
 		destroy_char_array(sh->child_argv);
 	if (sh->buffer != NULL)
@@ -722,7 +766,9 @@ char	*dir_slash_exec(char *dir, char *cmd)
 	char	*result;
 	char	*folder;
 
-	if (dir[ft_strlen(dir) - 1] != '/')
+	if (dir == NULL)
+		dir = EMPTY_STRING;
+	if ((ft_strlen(dir) > 0) && (dir[ft_strlen(dir) - 1] != '/'))
 		folder = ft_strjoin(dir, "/");
 	else
 		folder = ft_strdup(dir);
@@ -839,48 +885,6 @@ void	increase_buffer(t_shell *sh)
 	return ;
 }
 
-#define	KEY_UP_ARROW		"\e[A"
-#define KEY_DOWN_ARROW		"\e[B"
-#define	KEY_LEFT_ARROW		"\e[D"
-#define	KEY_RIGHT_ARROW		"\e[C"
-#define KEY_BACKSPACE		"\x7f"
-#define KEY_DELETE			"\e[3~"
-#define KEY_CTRL_A			"\x01"
-#define KEY_CTRL_E			"\x05"
-#define KEY_CTRL_K			"\x0b"
-#define KEY_CTRL_L			"\x0c"
-#define KEY_TAB				"\x09"
-
-
-const char *special_keys[] = {
-		KEY_UP_ARROW,
-		KEY_DOWN_ARROW,
-		KEY_LEFT_ARROW,
-		KEY_RIGHT_ARROW,
-		KEY_BACKSPACE,
-		KEY_DELETE,
-		KEY_CTRL_A,
-		KEY_CTRL_E,
-		KEY_CTRL_K,
-		KEY_CTRL_L,
-		KEY_TAB
-};
-
-void	(*special_key_functions[]) (t_shell *) = 
-{
-	&key_up_arrow_function,
-	&key_down_arrow_function,
-	&key_left_arrow_function,
-	&key_right_arrow_function,
-	&key_backspace_function,
-	&key_delete_function,
-	&key_ctrl_a_function,
-	&key_ctrl_e_function,
-	&key_ctrl_k_function,
-	&key_ctrl_l_function,
-	&key_tab_function
-};
-
 void	terminal_init(t_shell *sh)
 {
 	char	buf[1024];
@@ -895,21 +899,11 @@ void	terminal_init(t_shell *sh)
 	sh->cursor_move_right = tgetstr("nd", NULL);
 	sh->cursor_move_down = tgetstr("do", NULL);
 	sh->cursor_move_up = tgetstr("up", NULL);
+	sh->clear_till_eol = tgetstr("ce", NULL);
+	sh->clear_all = tgetstr("cl", NULL);
 	sh->clear_down = tgetstr("cd", NULL);
 	(void)termios_save_settings(sh);
 	return ;
-}
-
-void	key_up_arrow_function(t_shell *sh)
-{
-	ft_printf(STDOUT_FILENO, "[up arrow key]");
-	sh->buf_i += 0;
-}
-
-void	key_down_arrow_function(t_shell *sh)
-{
-	ft_printf(STDOUT_FILENO, "[down arrow key]");
-	sh->buf_i += 0;
 }
 
 void	key_left_arrow_function(t_shell *sh)
@@ -991,19 +985,34 @@ void	key_ctrl_e_function(t_shell *sh)
 
 void	key_ctrl_k_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "ctrl + k\n");
-	sh->buf_i += 0;
+//	ft_printf(STDOUT_FILENO, "ctrl + k\n");
+//	sh->buf_i += 0;
+	sh->input_size = sh->buf_i;
+	ft_bzero(&sh->buffer[sh->buf_i], sh->bufsize - sh->buf_i);
+	ft_putstr(sh->clear_till_eol);
+	reprint_input(sh);
 }
 
 void	key_ctrl_l_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "ctrl + l\n");
-	sh->buf_i += 0;
+//	ft_printf(STDOUT_FILENO, "ctrl + l\n");
+//	sh->buf_i += 0;
+	ft_putstr(sh->clear_all);
+	reprint_input(sh);
 }
 
 void	key_tab_function(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO, "tab\n");
+	//when one match only, autocomplete (replace) current word with match and append space,
+	//when multiple matches show a list of matches in columns, like ls,
+	//when over a hundred matches, prompt user for display, (calculate number of output lines)
+	//
+	//if first word of command then suggest executables from $PATH folders
+	//if not first word, suggest files
+	//
+	//autocomplete
+	//
+//	ft_printf(STDOUT_FILENO, "tab\n");
 	sh->buf_i += 0;
 }
 
@@ -1074,10 +1083,170 @@ void	insert_key_into_buffer(t_shell *sh)
 
 }
 
+
+char	*file_get_contents(char *filename)
+{
+	int			fd;
+	struct stat	st;
+	char		*data;
+
+	if ((fd = open(filename, O_RDONLY)) == -1)
+		return (NULL);
+	data = NULL;
+	if ((fstat(fd, &st)) == 0)
+	{
+		if ((data = ft_memalloc(st.st_size + 1)) == NULL)
+		{
+			(void)close(fd);
+			return (NULL);
+		}
+		if ((read(fd, data, st.st_size)) != st.st_size)
+		{
+			free(data);
+			data = NULL;
+		}
+	}
+	(void)close(fd);
+	return (data);
+}
+
+char	*history_file_name(t_shell *sh)
+{
+	char	*home;
+	char	*fullpath;
+
+	home = kv_array_get_key_value(sh->envp, "HOME");
+	if (home == NULL)
+		home = EMPTY_STRING;
+	fullpath = dir_slash_exec(home, HISTORY_FILE);
+	return (fullpath);
+}
+
+char	**history_array(t_shell *sh)
+{
+	char	*filename;
+	char	*data;
+	char	**array;
+
+	filename = history_file_name(sh);
+	data = file_get_contents(filename);
+	free(filename);
+	if (data == NULL)
+		return (NULL);
+	array = ft_strsplit(data, '\n');
+	free(data);
+	return (array);
+}
+
+
+void	key_up_arrow_function(t_shell *sh)
+{
+//	ft_printf(STDOUT_FILENO, "[up arrow key]");
+//	sh->buf_i += 0;
+
+	char	*result;
+	int		k;
+
+	if (sh->history == NULL)
+		return ;
+	if ((sh->history_i == 0) && (sh->partial_input == NULL))
+		sh->partial_input = ft_strdup(sh->buffer);
+	if (sh->history_i < sh->history_count)
+		sh->history_i++;
+	k = sh->history_count - sh->history_i;
+	result = sh->history[k];
+	if (ft_strlen(result) < sh->bufsize)
+	{
+		ft_bzero(sh->buffer, sh->bufsize);
+		(void)ft_strcpy(sh->buffer, result);
+		sh->buf_i = ft_strlen(sh->buffer);
+		sh->input_size = sh->buf_i;
+		reprint_input(sh);
+	}
+	return ;
+}
+
+void	restore_partial_input(t_shell *sh)
+{
+	ft_bzero(sh->buffer, sh->bufsize);
+	(void)ft_strcpy(sh->buffer, sh->partial_input);
+	free(sh->partial_input);
+	sh->partial_input = NULL;
+	sh->buf_i = ft_strlen(sh->buffer);
+	sh->input_size = sh->buf_i;
+	reprint_input(sh);
+}
+
+
+void	key_down_arrow_function(t_shell *sh)
+{
+//	ft_printf(STDOUT_FILENO, "[down arrow key]");
+//	sh->buf_i += 0;
+
+	char	*result;
+	int		k;
+
+	if (sh->history == NULL)
+		return ;
+	if (sh->history_i > 0)
+		sh->history_i--;
+	else
+		return ;
+	if (sh->history_i == 0)
+		return restore_partial_input(sh);
+	k = sh->history_count - sh->history_i;
+	result = sh->history[k];
+	if (ft_strlen(result) < sh->bufsize)
+	{
+		ft_bzero(sh->buffer, sh->bufsize);
+		(void)ft_strcpy(sh->buffer, result);
+		sh->buf_i = ft_strlen(sh->buffer);
+		sh->input_size = sh->buf_i;
+		reprint_input(sh);
+	}
+	return ;
+}
+
+char	*history_get_item(t_shell *sh, int index)
+{
+	char	**history;
+	int		count;
+	char	*result;
+
+	if ((history = history_array(sh)) == NULL)
+		return (NULL);
+	count = count_char_array(history);
+	result = NULL;
+	if (index <= count)
+	{
+		result = ft_strdup(history[count - index]);
+	}
+	destroy_char_array(history);
+	return (result);
+}
+
+void	history_append_to_file(t_shell *sh)
+{
+	int		fd;
+	char	*filename;
+
+	filename = history_file_name(sh);
+	fd = open(filename, O_APPEND | O_CREAT | O_WRONLY, 0644);
+	free(filename);
+	if (fd == -1)
+		return ;
+	(void)lseek(fd, 0, SEEK_END);
+	(void)write(fd, sh->buffer, sh->input_size);
+	(void)write(fd, "\n", 1);
+	(void)close(fd);
+	return ;
+}
+
 void	end_of_input(t_shell *sh)
 {
-	ft_printf(STDOUT_FILENO,  "\n");
-	sh->buf_i += 0;
+	if (ft_strlen(sh->buffer) > 0)
+		(void)history_append_to_file(sh);
+	(void)ft_printf(STDOUT_FILENO,  "\n");
 	return ;
 }
 
@@ -1087,6 +1256,12 @@ void	init_input_buffer(t_shell *sh)
 	sh->bufsize = PAGE_SIZE;
 	sh->buf_i = 0;
 	sh->input_size = 0;
+	sh->history = history_array(sh);
+	sh->history_count = 0;
+	if (sh->history != NULL)
+		sh->history_count = count_char_array(sh->history);
+	sh->history_i = 0;
+	sh->partial_input = NULL;
 	display_shell_prompt();
 }
 
@@ -1110,6 +1285,20 @@ void	raw_read(t_shell *sh)
 	return ;
 }
 
+void	clear_input_buffers(t_shell *sh)
+{
+	if (sh->partial_input != NULL)
+		free(sh->partial_input);
+	if (sh->history != NULL)
+		destroy_char_array(sh->history);
+	sh->history = NULL;
+	destroy_char_array(sh->child_argv);
+	sh->child_argv = NULL;
+	free(sh->buffer);
+	sh->buffer = NULL;
+	return ;
+}
+
 int		main(int argc, char **argv, char **envp)
 {
 	t_shell	*sh;
@@ -1130,33 +1319,7 @@ int		main(int argc, char **argv, char **envp)
 			else
 				(void)execute_external_cmd(sh);
 		}
-
-
-/*		
-		j = 0;
-		while (sh->child_argv[j]):
-		{
-			ft_printf(1, "child argv[%d] = %s\n", j, sh->child_argv[j]);
-			j++;
-		}
-
-		argument = argument_by_index(sh, sh->buffer, i);
-		if (argument != NULL)
-		{
-//			ft_printf(1, "index %d, argument = %s\n", i, argument);
-			builtin = builtin_cmd_index(argument);
-			free(argument);
-			if (builtin != -1)
-				builtin_functions[builtin](sh);	//run built-in
-			else
-				builtin = 0;					//run external command
-		}
-*/
-
-		destroy_char_array(sh->child_argv);
-		sh->child_argv = NULL;
-		free(sh->buffer);
-		sh->buffer = NULL;
+		clear_input_buffers(sh);
 	}
 	clean_up(sh);
 	return (0);
