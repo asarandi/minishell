@@ -16,7 +16,6 @@ SRC			=	builtins.c \
 				string_utils.c \
 				tab_key.c \
 				termcaps.c
-#				words.c
 
 OBJ			= $(SRC:%.c=%.o)
 CC			= gcc
