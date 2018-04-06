@@ -1,4 +1,3 @@
-
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -7,13 +6,11 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/04 20:11:18 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/06 08:02:55 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
-
-
 
 void	clean_up(t_shell *sh)
 {
@@ -57,8 +54,11 @@ t_shell	*init_shell(int argc, char **argv, char **envp)
 
 int		main(int argc, char **argv, char **envp)
 {
-	t_shell	*sh;
-	int		r;
+	t_shell		*sh;
+	int			r;
+	static void	(*builtin_functions[]) (t_shell *) = {&builtin_echo,
+		&builtin_cd, &builtin_setenv, &builtin_unsetenv, &builtin_env,
+		&builtin_exit, &builtin_help};
 
 	sh = init_shell(argc, argv, envp);
 	while (1)
@@ -66,9 +66,8 @@ int		main(int argc, char **argv, char **envp)
 		raw_read(sh);
 		if (sh->buffer == NULL)
 			break ;
-		sh->child_argv = ft_memalloc(sizeof(char *));
-		sh->child_argv[0] = NULL;
-		if ((build_child_argv_list(sh, 0, 0, 1) == 1) && (sh->child_argv[0] != NULL))
+		if ((build_child_argv_list(sh, 0, 0, 1) == 1)
+				&& (sh->child_argv[0] != NULL))
 		{
 			if ((r = builtin_cmd_index(sh->child_argv[0])) != -1)
 				(void)builtin_functions[r](sh);

@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:20:39 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/06 05:32:49 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/06 07:00:22 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,7 +58,7 @@ void	key_down_arrow_function(t_shell *sh)
 	if (sh->history_i > 0)
 		sh->history_i--;
 	if (sh->history_i == 0)
-		return restore_partial_input(sh);
+		return (restore_partial_input(sh));
 	k = sh->history_count - sh->history_i;
 	result = sh->history[k];
 	if (ft_strlen(result) < sh->bufsize)

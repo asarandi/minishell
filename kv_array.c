@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:11:00 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/06 05:12:05 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/06 06:58:00 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,8 @@ int		kv_array_get_key_index(char **array, char *key)
 
 char	*kv_array_get_key_value(char **array, char *key)
 {
-	int	index;
-	char *value;
+	int		index;
+	char	*value;
 
 	index = kv_array_get_key_index(array, key);
 	if (index == -1)
@@ -54,7 +54,7 @@ char	*create_kv_string(char *key, char *value)
 	int		v_len;
 
 	k_len = ft_strlen(key);
-	v_len = ft_strlen(value);	
+	v_len = ft_strlen(value);
 	result = ft_memalloc(k_len + v_len + 2);
 	ft_strncpy(result, key, k_len);
 	result[k_len] = '=';

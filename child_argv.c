@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:57:11 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/06 06:16:31 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/06 08:02:56 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,15 +26,17 @@ t_av	*init_av_buffers(t_shell *sh)
 {
 	t_av	*av;
 
+	sh->child_argv = ft_memalloc(sizeof(char *));
+	sh->child_argv[0] = NULL;
 	if ((av = ft_memalloc(sizeof(t_av))) == NULL)
 		return (NULL);
 	av->in = sh->buffer;
-	if ((av->out = ft_memalloc(PAGE_SIZE * 2)) == NULL)	/* XXX buffer for argument*/
+	if ((av->out = ft_memalloc(PAGE_SIZE * 2)) == NULL)
 	{
 		cleanup_av_buffers(av);
 		return (NULL);
 	}
-	if ((av->key = ft_memalloc(PAGE_SIZE)) == NULL)	/* XXX */
+	if ((av->key = ft_memalloc(PAGE_SIZE)) == NULL)
 	{
 		cleanup_av_buffers(av);
 		return (NULL);
@@ -56,6 +58,7 @@ void	add_string_to_child_argv(t_shell *sh, char *str, int *k)
 	new_string = ft_strdup(str);
 	sh->child_argv = add_element_to_char_array(sh->child_argv, new_string);
 	destroy_char_array(old_array);
+	return ;
 }
 
 int		build_child_argv_list(t_shell *sh, int i, int k, int sub_op)

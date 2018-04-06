@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   special_keys.c                                     :+:      :+:    :+:   */
+/*   special_keys_a.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:16:43 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/06 06:34:44 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/06 08:00:38 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,14 @@ void	check_special_keys(t_shell *sh)
 	int			i;
 	const char	*key;
 	int			len;
+	const char	*special_keys[] = {KEY_UP_ARROW, KEY_DOWN_ARROW, KEY_LEFT_ARROW,
+		KEY_RIGHT_ARROW, KEY_BACKSPACE, KEY_DELETE, KEY_CTRL_A, KEY_CTRL_E,
+		KEY_CTRL_K, KEY_CTRL_L, KEY_TAB};
+	static void	(*special_key_functions[]) (t_shell *) = {
+	&key_up_arrow_function, &key_down_arrow_function, &key_left_arrow_function,
+	&key_right_arrow_function, &key_backspace_function, &key_delete_function,
+	&key_ctrl_a_function, &key_ctrl_e_function, &key_ctrl_k_function,
+	&key_ctrl_l_function, &key_tab_function };
 
 	i = 0;
 	while (i < NUM_SPECIAL_KEYS)
@@ -89,35 +97,5 @@ void	key_delete_function(t_shell *sh)
 		sh->input_size--;
 		reprint_input(sh);
 	}
-	return ;
-}
-
-void	key_ctrl_a_function(t_shell *sh)
-{
-	sh->buf_i = 0;
-	reprint_input(sh);
-	return ;
-}
-
-void	key_ctrl_e_function(t_shell *sh)
-{
-	sh->buf_i = sh->input_size;
-	reprint_input(sh);
-	return ;
-}
-
-void	key_ctrl_k_function(t_shell *sh)
-{
-	sh->input_size = sh->buf_i;
-	ft_bzero(&sh->buffer[sh->buf_i], sh->bufsize - sh->buf_i);
-	ft_putstr(sh->clear_till_eol);
-	reprint_input(sh);
-	return ;
-}
-
-void	key_ctrl_l_function(t_shell *sh)
-{
-	ft_putstr(sh->clear_all);
-	reprint_input(sh);
 	return ;
 }
