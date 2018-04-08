@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:06:58 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/06 07:34:32 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 01:34:34 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,45 +50,79 @@ void	builtin_echo(t_shell *sh)
 		ft_printf(STDOUT_FILENO, "\n");
 }
 
-void	builtin_cd(t_shell *sh)
+char	*builtin_cd_get_kv(t_shell *sh, char *variable)
 {
-	char	*cwd;
+	char	*result;
+
+	result = NULL;
+	result = kv_array_get_key_value(sh->envp, variable);
+	if (result == NULL)
+		(void)ft_printf(STDERR_FILENO, E_NOVARIABLE, variable);
+	return (result);	
+}
+
+char	*builtin_cd_get_path(t_shell *sh)
+{
+	char	*tempo;
 	char	*path;
 
-	if ((sh->child_argv[1] != NULL) && (sh->child_argv[2] != NULL))
-		return ((void)ft_printf(STDERR_FILENO, E_TOOMANY2, "cd"));
+	path = NULL;
+	tempo = builtin_cd_get_kv(sh, "HOME");
 	if ((sh->child_argv[1] == NULL) || (ft_strcmp(sh->child_argv[1], "~") == 0))
 	{
-		if ((path = kv_array_get_key_value(sh->envp, "HOME")) == NULL)
-			return ((void)ft_printf(STDERR_FILENO, E_NOVARIABLE, "$HOME"));
+		if (tempo != NULL)
+			path = ft_strdup(tempo);
+	}
+	else if (ft_strncmp(sh->child_argv[1], "~/", 2) == 0)
+	{
+		if (tempo != NULL)
+			path = dir_slash_exec(tempo, &sh->child_argv[1][2]);
 	}
 	else if ((ft_strcmp(sh->child_argv[1], "-")) == 0)
 	{
-		if ((path = kv_array_get_key_value(sh->envp, "OLDPWD")) == NULL)
-			return ((void)ft_printf(STDERR_FILENO, E_NOVARIABLE, "$OLDPWD"));
+		if ((tempo = builtin_cd_get_kv(sh, "OLDPWD")) != NULL)
+			path = ft_strdup(tempo);
 	}
 	else
-		path = sh->child_argv[1];
+		path = ft_strdup(sh->child_argv[1]);
+	return (path);
+}
+
+void	builtin_cd_save_cwd(t_shell *sh, char *variable)
+{
+	char	*cwd;
+
 	cwd = NULL;
 	cwd = getcwd(NULL, 0);
-	if (chdir(path) == -1)
-	{
-		if (cwd != NULL)
-			free(cwd);
-		return ((void)ft_printf(STDERR_FILENO, E_CHDIRFAIL));
-	}
 	if (cwd != NULL)
 	{
-		kv_array_set_key_value(&sh->envp, "OLDPWD", cwd);
+		kv_array_set_key_value(&sh->envp, variable, cwd);
 		free(cwd);
 	}
-	if ((cwd = getcwd(NULL, 0)) == NULL)
-		ft_printf(STDERR_FILENO, "%s\n", E_CWDFAIL);
 	else
+		ft_printf(STDERR_FILENO, "%s\n", E_CWDFAIL);
+	return ;
+}
+
+void	builtin_cd(t_shell *sh)
+{
+	char	*path;
+	int		r;
+
+	if (count_char_array(sh->child_argv) > 2)
+		return ((void)ft_printf(STDERR_FILENO, E_TOOMANY2, "cd"));
+	path = builtin_cd_get_path(sh);
+	if (path != NULL)
 	{
-		kv_array_set_key_value(&sh->envp, "PWD", cwd);
-		free(cwd);
+		builtin_cd_save_cwd(sh, "OLDPWD");
+		r = chdir(path);
+		free(path);
+		if (r == -1)
+			(void)ft_printf(STDERR_FILENO, E_CHDIRFAIL);
+		else
+			builtin_cd_save_cwd(sh, "PWD");
 	}
+	return ;
 }
 
 void	builtin_exit(t_shell *sh)
