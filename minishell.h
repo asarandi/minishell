@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 03:53:04 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 05:11:25 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 #include <termios.h>
 #include <termcap.h>
 #include <signal.h>
+#include <dirent.h>
 
 typedef struct	s_av
 {
@@ -30,6 +31,12 @@ typedef struct	s_av
 	char	*key;
 	char	*val;
 }				t_av;
+
+typedef struct	s_executable
+{
+	char				*cmd;
+	struct s_executable	*next;
+}				t_exec;
 
 typedef struct	s_shell
 {
@@ -59,6 +66,8 @@ typedef struct	s_shell
 	struct termios	t_custom;
 	int			custom_terminal;
 	int			state;
+	t_exec		*exec;
+	t_exec		*last_exec;
 
 }				t_shell;
 
@@ -109,6 +118,8 @@ extern	void	(*special_key_functions[]) (t_shell *);
 #define KEY_CTRL_L			"\x0c"
 #define KEY_TAB				"\x09"
 
+void	build_list_of_executables(t_shell *sh);
+void	destroy_list_of_executables(t_shell *sh);
 char	**add_element_to_char_array(char **array, char *string);
 char	**create_char_array_copy(char **src, int extra);
 char	**history_array(t_shell *sh);

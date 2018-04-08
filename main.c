@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 03:36:38 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 05:31:59 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 void	clean_up(t_shell *sh)
 {
 	termios_restore_settings(sh);
+	destroy_list_of_executables(sh);
 	if (sh->envp != NULL)
 		destroy_char_array(sh->envp);
 	if (sh->history != NULL)
@@ -69,6 +70,18 @@ t_shell	*init_shell(int argc, char **argv, char **envp)
 	sh->envp = create_char_array_copy(envp, 0);
 	terminal_init(sh);
 	g_sh = sh;
+	build_list_of_executables(sh);
+
+/////debug
+	t_exec	*ptr;
+	ptr = sh->exec;
+	while (ptr != NULL)
+	{
+		ft_printf(STDOUT_FILENO, "%s\n", ptr->cmd);
+		ptr = ptr->next;
+	}
+///
+//
 	return (sh);
 }
 

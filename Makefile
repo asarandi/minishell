@@ -1,5 +1,6 @@
 NAME		= minishell
-SRC			=	builtins.c \
+SRC			=	autocomplete.c \
+				builtins.c \
 				builtins_env.c \
 				char_array.c \
 				child_argv.c \

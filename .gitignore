@@ -5,6 +5,7 @@ debug
 minishell
 .vscode
 ._*
+.nfs.*
 
 # Object files
 *.o

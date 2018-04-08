@@ -1,7 +1,7 @@
-expand ~ (tilde) for cd builtin .. ie "cd ~/Desktop/MINISHELL" should work
-implement a check to see if executable is a folder, do not excute folders
+DONE expand ~ (tilde) for cd builtin .. ie "cd ~/Desktop/MINISHELL" should work
+DONE implement a check to see if executable is a folder, do not excute folders
 launch executables in current folder only if prefixed with ./
-implement ctrl+c signal handler
+DONE implement ctrl+c signal handler
 implement auto-completion using glob(), must handle builtins; use tab key
 implement semi-colon ?
 DONE -- termcaps? up/down arrows = history, left/right for navigation in cmd line;
