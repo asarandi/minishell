@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 03:11:46 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 03:53:04 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,6 +58,7 @@ typedef struct	s_shell
 	struct termios	t_original;
 	struct termios	t_custom;
 	int			custom_terminal;
+	int			state;
 
 }				t_shell;
 
@@ -89,6 +90,8 @@ extern	void	(*special_key_functions[]) (t_shell *);
 #define STRONG_QUOTE		0x27
 #define WEAK_QUOTE			0x22
 #define BACKSLASH			0x5c
+#define STATE_READ			1
+#define STATE_EXEC			2
 #define EMPTY_STRING		""
 #define DOLLAR_SIGN			'$'
 #define NUM_BUILTINS		7
@@ -123,7 +126,7 @@ int		builtin_cmd_index(char *cmd);
 int		count_char_array(char **array);
 int		count_command_arguments(char *str);
 int		get_word_length(char *str);
-int		is_fullpath_provided(char *fullpath);
+int		is_valid_executable_file(char *filename);
 int		kv_array_get_key_index(char **array, char *key);
 int		main(int argc, char **argv, char **envp);
 int		path_has_executable(char *path, char *cmd);

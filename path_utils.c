@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:29:17 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/06 06:02:02 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 03:54:14 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,10 +28,18 @@ char	*dir_slash_exec(char *dir, char *cmd)
 	return (result);
 }
 
-int		is_fullpath_provided(char *fullpath)
+int		is_valid_executable_file(char *filename)
 {
-	if (access(fullpath, F_OK | X_OK) == 0)
-		return (1);
+	struct	stat	st;
+
+	if (access(filename, F_OK | X_OK) == 0)
+	{
+		if (stat(filename, &st) == 0)
+		{
+			if (S_ISREG(st.st_mode))
+				return (1);
+		}
+	}
 	return (0);
 }
 
@@ -41,9 +49,7 @@ int		path_has_executable(char *path, char *cmd)
 	int		result;
 
 	fullpath = dir_slash_exec(path, cmd);
-	result = 0;
-	if (access(fullpath, F_OK | X_OK) == 0)
-		result = 1;
+	result = is_valid_executable_file(fullpath);
 	free(fullpath);
 	return (result);
 }

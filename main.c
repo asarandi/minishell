@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 03:21:33 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 03:36:38 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,13 +41,19 @@ void	fatal_error_message(t_shell *sh, char *msg)
 
 void	sigint_handler(int signo)
 {
+	ft_printf(STDOUT_FILENO, "\n");
 	if (signo == SIGINT)
 	{
-		ft_bzero(g_sh->buffer, g_sh->bufsize);
-		g_sh->buf_i = 0;
-		g_sh->input_size = 0;
-		ft_printf(STDOUT_FILENO, "\n");
-		display_shell_prompt();
+		if (g_sh->state == STATE_READ)
+		{
+			ft_bzero(g_sh->buffer, g_sh->bufsize);
+			g_sh->buf_i = 0;
+			g_sh->input_size = 0;
+			display_shell_prompt();
+		}
+		else if (g_sh->state == STATE_EXEC)
+		{
+		}
 	}
 }
 
@@ -77,9 +83,11 @@ int		main(int argc, char **argv, char **envp)
 	sh = init_shell(argc, argv, envp);
 	while (1)
 	{
+		sh->state = STATE_READ;
 		raw_read(sh);
 		if (sh->buffer == NULL)
 			break ;
+		sh->state = STATE_EXEC;
 		if ((build_child_argv_list(sh, 0, 0, 1) == 1)
 				&& (sh->child_argv[0] != NULL))
 		{
