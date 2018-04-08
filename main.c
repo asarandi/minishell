@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/06 08:02:55 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 03:21:33 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,16 +39,30 @@ void	fatal_error_message(t_shell *sh, char *msg)
 	fatal_error(sh);
 }
 
+void	sigint_handler(int signo)
+{
+	if (signo == SIGINT)
+	{
+		ft_bzero(g_sh->buffer, g_sh->bufsize);
+		g_sh->buf_i = 0;
+		g_sh->input_size = 0;
+		ft_printf(STDOUT_FILENO, "\n");
+		display_shell_prompt();
+	}
+}
+
 t_shell	*init_shell(int argc, char **argv, char **envp)
 {
 	t_shell	*sh;
 
+	(void)signal(SIGINT, sigint_handler);
 	if ((sh = ft_memalloc(sizeof(t_shell))) == NULL)
 		fatal_error_message(sh, E_NOMEM);
 	sh->argc = argc;
 	sh->argv = argv;
 	sh->envp = create_char_array_copy(envp, 0);
 	terminal_init(sh);
+	g_sh = sh;
 	return (sh);
 }
 

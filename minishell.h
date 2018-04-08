@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/06 06:34:25 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 03:11:46 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <termcap.h>
+#include <signal.h>
 
 typedef struct	s_av
 {
@@ -59,6 +60,8 @@ typedef struct	s_shell
 	int			custom_terminal;
 
 }				t_shell;
+
+t_shell	*g_sh;
 
 extern	const char *builtin_list[];
 extern	void (*builtin_functions[]) (t_shell *);
