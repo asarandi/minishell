@@ -1,0 +1,16 @@
+enable -n return
+enable -n set
+enable -n shift
+enable -n shopt
+enable -n source
+enable -n suspend
+enable -n test
+enable -n times
+enable -n trap
+enable -n true
+enable -n type
+enable -n typeset
+enable -n ulimit
+enable -n umask
+enable -n unalias
+enable -n unset
