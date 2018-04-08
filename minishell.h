@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 08:53:21 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 14:55:28 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,6 +100,7 @@ extern	void	(*special_key_functions[]) (t_shell *);
 #define STRONG_QUOTE		0x27
 #define WEAK_QUOTE			0x22
 #define BACKSLASH			0x5c
+#define COMMAND_SEPARATOR	';'
 #define STATE_READ			1
 #define STATE_EXEC			2
 #define EMPTY_STRING		""
@@ -133,7 +134,7 @@ char	*get_word_by_index(char *str, int index);
 char	*history_file_name(t_shell *sh);
 char	*history_get_item(t_shell *sh, int index);
 char	*kv_array_get_key_value(char **array, char *key);
-int		build_child_argv_list(t_shell *sh, int i, int k, int sub_op);
+int		build_child_argv_list(t_shell *sh, int *i, int k, int sub_op);
 int		builtin_cmd_index(char *cmd);
 int		count_char_array(char **array);
 int		count_command_arguments(char *str);

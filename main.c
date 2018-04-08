@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 06:21:16 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 14:58:42 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,13 +74,36 @@ t_shell	*init_shell(int argc, char **argv, char **envp)
 	return (sh);
 }
 
-int		main(int argc, char **argv, char **envp)
+void	execute(t_shell *sh)
 {
-	t_shell		*sh;
 	int			r;
+	int			i;
 	static void	(*builtin_functions[]) (t_shell *) = {&builtin_echo,
 		&builtin_cd, &builtin_setenv, &builtin_unsetenv, &builtin_env,
 		&builtin_exit, &builtin_help};
+
+	sh->state = STATE_EXEC;
+	i = 0;
+	if (build_child_argv_list(sh, &i, 0, 1) == 1)
+	{
+		if (sh->child_argv[0] != NULL)
+		{
+			if ((r = builtin_cmd_index(sh->child_argv[0])) != -1)
+				(void)builtin_functions[r](sh);
+			else
+				(void)execute_external_cmd(sh);
+		}
+		if (sh->buffer[i] == ';')
+		{
+			ft_strcpy(sh->buffer, &sh->buffer[i + 1]);
+			execute(sh);
+		}
+	}
+}
+
+int		main(int argc, char **argv, char **envp)
+{
+	t_shell		*sh;
 
 	sh = init_shell(argc, argv, envp);
 	while (1)
@@ -89,15 +112,7 @@ int		main(int argc, char **argv, char **envp)
 		raw_read(sh);
 		if (sh->buffer == NULL)
 			break ;
-		sh->state = STATE_EXEC;
-		if ((build_child_argv_list(sh, 0, 0, 1) == 1)
-				&& (sh->child_argv[0] != NULL))
-		{
-			if ((r = builtin_cmd_index(sh->child_argv[0])) != -1)
-				(void)builtin_functions[r](sh);
-			else
-				(void)execute_external_cmd(sh);
-		}
+		execute(sh);
 		clear_input_buffers(sh);
 	}
 	clean_up(sh);
