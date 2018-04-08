@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:25:17 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 10:00:11 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 11:25:09 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -172,8 +172,6 @@ void	tab_print_columns(t_exec **array, int count)
 
 	
 	ft_printf(1, "\n");
-	tab_bubble_sort(array, count);
-	tab_remove_duplicates(array, &count);
 	max_len = tab_max_length(array);
 	if (ioctl(0, TIOCGWINSZ, &ws) == -1)
 		return ;
@@ -219,8 +217,65 @@ void	tab_print_columns(t_exec **array, int count)
 	}
 	if (flag)
 		ft_printf(1, "\n");
-
 }
+
+
+int		tab_all_commands_longer(t_shell *sh, t_exec **a)
+{
+	size_t	k_len;
+	int		i;
+
+	i = 0;
+	while (a[i] != NULL)
+	{
+		k_len = ft_strlen(basename(a[i]->cmd));
+		if (k_len <= sh->input_size)
+			return (0);
+		i++;
+	}
+	return (1);
+}
+
+int		tab_all_commands_share_letter(t_exec **a, int index, char c)
+{
+	int		i;
+	char	*cmd;
+
+	i = 0;
+	while (a[i] != NULL)
+	{
+		cmd = basename(a[i]->cmd);
+		if (cmd[index] != c)
+			return (0);
+		i++;
+	}
+	return (1);
+}
+
+int		tab_mini_complete(t_shell *sh, t_exec **a)
+{
+	char	c;
+	int		i_len;
+//	int		i;
+
+	if (tab_all_commands_longer(sh, a) == 1)
+	{
+		i_len = sh->input_size;
+		c = basename(a[0]->cmd)[i_len];
+		if (tab_all_commands_share_letter(a, i_len, c) == 1)
+		{
+			sh->buffer[i_len] = c;
+			sh->input_size++;
+			sh->buf_i++;
+			reprint_input(sh);
+			return (1 + tab_mini_complete(sh, a));
+		}
+	}
+	return (0);
+}
+
+
+
 
 void	key_tab_function(t_shell *sh)
 {
@@ -231,6 +286,9 @@ void	key_tab_function(t_shell *sh)
 	{
 		matches = tab_array_of_matches(sh);
 		i = tab_count_matches(sh);
+		tab_bubble_sort(matches, i);
+		tab_remove_duplicates(matches, &i);
+
 		if (i == 1)
 		{
 			ft_strcpy(sh->buffer, basename(matches[0]->cmd));
@@ -240,8 +298,11 @@ void	key_tab_function(t_shell *sh)
 		}
 		else if (i > 1)
 		{
-			tab_print_columns(matches, i);
-			reprint_input(sh);
+			if (tab_mini_complete(sh, matches) == 0)
+			{
+				tab_print_columns(matches, i);
+				reprint_input(sh);
+			}
 /*			ft_printf(1, "\n");
 			i = 0;
 			while (matches[i] != 0)
