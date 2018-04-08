@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 05:31:59 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 06:21:16 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,17 +71,6 @@ t_shell	*init_shell(int argc, char **argv, char **envp)
 	terminal_init(sh);
 	g_sh = sh;
 	build_list_of_executables(sh);
-
-/////debug
-	t_exec	*ptr;
-	ptr = sh->exec;
-	while (ptr != NULL)
-	{
-		ft_printf(STDOUT_FILENO, "%s\n", ptr->cmd);
-		ptr = ptr->next;
-	}
-///
-//
 	return (sh);
 }
 

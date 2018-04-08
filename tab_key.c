@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:25:17 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 06:17:33 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 06:23:19 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,14 +88,15 @@ void	key_tab_function(t_shell *sh)
 	if ((sh->input_size > 0) && (string_has_whitespace(sh->buffer) == 0))
 	{
 		matches = tab_array_of_matches(sh);
-		if (tab_count_matches(sh) == 1)
+		i = tab_count_matches(sh);
+		if (i == 1)
 		{
 			ft_strcpy(sh->buffer, basename(matches[0]->cmd));
 			sh->buf_i = ft_strlen(basename(matches[0]->cmd));
 			sh->buffer[sh->buf_i++] = ' ';
 			sh->input_size = sh->buf_i;
 		}
-		else
+		else if (i > 1)
 		{
 			ft_printf(1, "\n");
 			i = 0;
