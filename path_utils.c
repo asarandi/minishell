@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:29:17 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 05:33:06 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 16:00:07 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ char	*dir_slash_exec(char *dir, char *cmd)
 
 int		is_valid_executable_file(char *filename)
 {
-	struct	stat	st;
+	struct stat	st;
 
 	if (access(filename, F_OK | X_OK) == 0)
 	{
@@ -52,6 +52,18 @@ int		path_has_executable(char *path, char *cmd)
 	result = is_valid_executable_file(fullpath);
 	free(fullpath);
 	return (result);
+}
+
+char	*basename(char *str)
+{
+	char	*result;
+
+	result = ft_strrchr(str, '/');
+	if (result == NULL)
+		return (EMPTY_STRING);
+	else if (result[1] == 0)
+		return (EMPTY_STRING);
+	return (&result[1]);
 }
 
 char	*find_command_path(t_shell *sh, char *cmd)

@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:51:05 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 14:58:42 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/08 16:32:42 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,18 +26,6 @@ void	clean_up(t_shell *sh)
 		free(sh->buffer);
 	if (sh != NULL)
 		free(sh);
-}
-
-void	fatal_error(t_shell *sh)
-{
-	clean_up(sh);
-	exit(EXIT_FAILURE);
-}
-
-void	fatal_error_message(t_shell *sh, char *msg)
-{
-	ft_printf(STDERR_FILENO, "%s: error: %s\n", SHELL_NAME, msg);
-	fatal_error(sh);
 }
 
 void	sigint_handler(int signo)
@@ -61,6 +49,8 @@ void	sigint_handler(int signo)
 t_shell	*init_shell(int argc, char **argv, char **envp)
 {
 	t_shell	*sh;
+	char	**folders;
+	char	*path;
 
 	(void)signal(SIGINT, sigint_handler);
 	if ((sh = ft_memalloc(sizeof(t_shell))) == NULL)
@@ -70,7 +60,16 @@ t_shell	*init_shell(int argc, char **argv, char **envp)
 	sh->envp = create_char_array_copy(envp, 0);
 	terminal_init(sh);
 	g_sh = sh;
-	build_list_of_executables(sh);
+	if ((path = kv_array_get_key_value(sh->envp, "PATH")) != NULL)
+	{
+		if ((folders = ft_strsplit(path, ':')) == NULL)
+			fatal_error_message(sh, E_NOMEM);
+		else
+		{
+			build_list_of_executables(sh, folders);
+			destroy_char_array(folders);
+		}
+	}
 	return (sh);
 }
 

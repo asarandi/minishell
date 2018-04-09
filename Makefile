@@ -1,9 +1,11 @@
 NAME		= minishell
 SRC			=	autocomplete.c \
+				builtin_cd.c \
 				builtins.c \
 				builtins_env.c \
 				char_array.c \
 				child_argv.c \
+				error.c \
 				exec.c \
 				file_op.c \
 				history.c \
@@ -12,12 +14,15 @@ SRC			=	autocomplete.c \
 				input_b.c \
 				kv_array.c \
 				main.c \
+				norme.c \
 				path_utils.c \
 				quotes.c \
 				special_keys_a.c \
 				special_keys_b.c \
 				string_utils.c \
+				tab_columns.c \
 				tab_key.c \
+				tab_utils.c \
 				termcaps.c
 
 OBJ			= $(SRC:%.c=%.o)
