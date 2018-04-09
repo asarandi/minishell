@@ -1,11 +1,11 @@
 DONE expand ~ (tilde) for cd builtin .. ie "cd ~/Desktop/MINISHELL" should work
 DONE implement a check to see if executable is a folder, do not excute folders
-launch executables in current folder only if prefixed with ./
+? launch executables in current folder only if prefixed with ./
 DONE implement ctrl+c signal handler
-implement auto-completion using glob(), must handle builtins; use tab key
-implement semi-colon ?
+DONE (no glob) implement auto-completion using glob(), must handle builtins; use tab key
+DONE implement semi-colon ?
 DONE -- termcaps? up/down arrows = history, left/right for navigation in cmd line;
-use !! to run previous command
+? use !! to run previous command
 DONE -- ctrl+a = beginning of string, ctrl+e end of string; ctrl+k .. cut everything after curson,
 DONE -- ctrl+l = clear screen
 
