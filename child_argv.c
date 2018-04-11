@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:57:11 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 16:40:46 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/11 10:34:56 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,7 @@ int		mini_parse(t_shell *sh, t_av *av, int *i, int *k)
 		r = 3;
 	else
 		av->out[(*k)++] = av->in[(*i)++];
-	if ((ft_isspace(av->in[*i])) || (av->in[*i] == 0) || r > 1)
+	if ((r > 0) && ((ft_isspace(av->in[*i])) || (av->in[*i] == 0)))
 		add_string_to_child_argv(sh, av->out, k);
 	return (r);
 }

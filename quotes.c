@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/06 05:13:13 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 15:22:45 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/11 10:28:50 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,10 @@ int	handle_weak_quote(t_av *av, t_shell *sh, int *i, int *k)
 	while (av->in[*i] != WEAK_QUOTE)
 	{
 		if ((av->in[*i] == DOLLAR_SIGN) && (ft_isalpha(av->in[*i + 1])))
-			(void)handle_dollar_sign(av, sh, i, k);
+		{
+			if (handle_dollar_sign(av, sh, i, k) == 0)
+				return (0);
+		}
 		else
 			out[(*k)++] = in[(*i)++];
 	}
