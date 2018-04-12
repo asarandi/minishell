@@ -6,13 +6,15 @@
 #    By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2017/09/20 17:41:00 by asarandi          #+#    #+#              #
-#    Updated: 2018/03/31 04:21:54 by asarandi         ###   ########.fr        #
+#    Updated: 2018/04/12 11:21:50 by asarandi         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-NAME		= libft.a
-CFLAGS		= -g -Wall -Werror -Wextra -I.
-FILES		=	ft_atoi.c \
+NAME		=	libft.a
+CC			=	gcc
+FLAGS		=	-Wall -Werror -Wextra -O2
+INC			=	-I inc/
+SRCFILES	=	ft_atoi.c \
 				ft_base64encode.c \
 				ft_bzero.c \
 				ft_capitalize.c \
@@ -77,45 +79,46 @@ FILES		=	ft_atoi.c \
 				ft_tolower.c \
 				ft_toupper.c \
 				ft_uriencode.c \
-				get_next_line.c
+				get_next_line.c \
+				ft_printf-add_precision.c \
+				ft_printf-add_width.c \
+				ft_printf-colos.c \
+				ft_printf-float_cosmetics.c \
+				ft_printf-format_csws.c \
+				ft_printf-format_ioux.c \
+				ft_printf-get_char.c \
+				ft_printf-get_double.c \
+				ft_printf-get_specs.c \
+				ft_printf-init_lib.c \
+				ft_printf-is_format.c \
+				ft_printf-iso8601.c \
+				ft_printf-non_numeric.c \
+				ft_printf-print_number.c \
+				ft_printf-string_op.c \
+				ft_printf-wchar_to_utf8.c \
+				ft_printf.c
 
-OBJ			= $(FILES:%.c=%.o)
-
-FILES2		=	ft_printf/add_precision.c \
-				ft_printf/add_width.c \
-				ft_printf/colors.c \
-				ft_printf/float_cosmetics.c \
-				ft_printf/format_csws.c \
-				ft_printf/format_ioux.c \
-				ft_printf/ft_printf.c \
-				ft_printf/get_char.c \
-				ft_printf/get_double.c \
-				ft_printf/get_specs.c \
-				ft_printf/init_lib.c \
-				ft_printf/is_format.c \
-				ft_printf/iso8601.c \
-				ft_printf/non_numeric.c \
-				ft_printf/print_number.c \
-				ft_printf/string_op.c \
-				ft_printf/wchar_to_utf8.c
-
-OBJ2		= $(FILES2:%.c=%.o)
+OBJFILES	=	$(SRCFILES:%.c=%.o)
+SRC			=	$(addprefix src/,$(SRCFILES))
+OBJ			=	$(addprefix obj/,$(OBJFILES))
 
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	make -C ft_printf/
-	ar rcs $(NAME) $(OBJ) $(OBJ2)
+	ar rcs $@ $^
 
-$(OBJ): $(FILES)
-	gcc $(CFLAGS) -c $(FILES)
+objdir:
+	mkdir -p obj/
+
+obj/%.o: src/%.c | objdir
+	$(CC) $(FLAGS) -c $< -o $@ $(INC)
 
 clean:
-	make clean -C ft_printf/
-	rm -rf $(OBJ)
+	rm -rf obj/
 
 fclean: clean
-	make fclean -C ft_printf/
 	rm -rf $(NAME)
 
 re: fclean all
+
+again: re

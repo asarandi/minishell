@@ -1,5 +1,7 @@
-NAME		= minishell
-SRC			=	autocomplete.c \
+#	if you're missing termcap.h on linux, install libncurses5-dev
+
+NAME		=	minishell
+SRCFILES	=	autocomplete.c \
 				builtin_cd.c \
 				builtins.c \
 				builtins_env.c \
@@ -25,34 +27,39 @@ SRC			=	autocomplete.c \
 				tab_utils.c \
 				termcaps.c
 
-OBJ			= $(SRC:%.c=%.o)
-CC			= gcc
-FLAGS		= -g -Wextra -Wall -Werror # -fsanitize=address
-INC			= -I libft/ -I libft/ft_printf/
-LIB			= -L libft/ -lft -L libft/ft_printf/ -lftprintf -ltermcap
+OBJFILES	=	$(SRCFILES:%.c=%.o)
+SRC			=	$(addprefix src/,$(SRCFILES))
+OBJ			=	$(addprefix obj/,$(OBJFILES))
+CC			=	gcc
+FLAGS		=	-Wextra -Wall -Werror -O2
+INC			=	-I libft/inc -I inc/
+LIB			=	-L libft/ -lft -ltermcap
 
 all:$(NAME)
 
-$(NAME):
+$(NAME): $(OBJ)
 	make -C libft/
-	make -C libft/ft_printf/
-	$(CC) $(FLAGS) $(INC) -c $(SRC)
-	$(CC) $(FLAGS) $(OBJ) $(LIB) -o $(NAME)
+	$(CC) $(FLAGS) -o $@ $^ $(LIB)
+
+objdir:
+	mkdir -p obj/
+
+obj/%.o: src/%.c | objdir
+	$(CC) $(FLAGS) -c $< -o $@ $(INC)
 
 rmobj:
-	rm -f $(OBJ)
+	rm -rf obj/
 
 rmbin:
-	rm -f $(NAME)
+	rm -rf $(NAME)
 
 again: rmobj rmbin all
 
 clean: rmobj
 	make clean -C libft/
-	make clean -C libft/ft_printf/
 
 fclean: clean rmbin
 	make fclean -C libft/
-	make fclean -C libft/ft_printf/
 
 re: fclean all
+

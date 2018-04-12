@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/30 09:37:11 by asarandi          #+#    #+#             */
-/*   Updated: 2018/03/31 04:55:14 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/12 11:17:47 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 # include <stdint.h>
 # include <limits.h>
 # include <wctype.h>
+# include "libft.h"
 
 # define FLAG_HASHTAG	1
 # define FLAG_ZERO		2
@@ -56,15 +57,11 @@ typedef const char		t_cc;
 void			float_cosmetics(t_placeholder *ph);
 int				float_round_suffix(char *str, int f);
 char			*float_round_prefix(char *str, int f);
-int				ft_strmatch(char *little, char *big);
 int				check_more_colors(int fd, char *str);
 int				check_colors(int fd, char *str);
 int				color_routine(int fd, const char *restrict *format);
 void			iso_time(uintmax_t t);
 char			*float_itoa(uintmax_t n);
-char			*ft_strcpy(char *dst, const char *src);
-char			*ft_strdup(const char *s1);
-char			*ft_strtoupper(char *s);
 int				digits_before_point(uintmax_t n);
 int				ft_printf(int fd, const char *restrict format, ...);
 int				get_base(char type);
