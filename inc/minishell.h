@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/03/30 19:50:54 by asarandi          #+#    #+#             */
-/*   Updated: 2018/04/08 16:46:11 by asarandi         ###   ########.fr       */
+/*   Updated: 2018/04/16 16:49:56 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,6 +78,7 @@ t_shell	*g_sh;
 # define SHELL_PROMPT		"$> "
 # define SHELL_NAME			"minishell"
 # define PAGE_SIZE			4096
+# define PAGESIZE			PAGE_SIZE
 # define E_NOMEM			"out of memory"
 # define E_READFAIL			"read() failed"
 # define E_GNLFAIL			"get_next_line() failed"
