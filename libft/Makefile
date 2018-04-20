@@ -6,13 +6,13 @@
 #    By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2017/09/20 17:41:00 by asarandi          #+#    #+#              #
-#    Updated: 2018/04/16 16:45:58 by asarandi         ###   ########.fr        #
+#    Updated: 2018/04/20 15:52:46 by asarandi         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME		=	libft.a
 CC			=	gcc
-FLAGS		=	-Wall -Werror -Wextra -O2
+CFLAGS		+=	-Wall -Werror -Wextra -O2
 INC			=	-I inc/
 SRCFILES	=	ft_atoi.c \
 				ft_base64encode.c \
@@ -111,7 +111,7 @@ objdir:
 	mkdir -p obj/
 
 obj/%.o: src/%.c | objdir
-	$(CC) $(FLAGS) -c $< -o $@ $(INC)
+	$(CC) $(CFLAGS) -c $< -o $@ $(INC)
 
 clean:
 	rm -rf obj/

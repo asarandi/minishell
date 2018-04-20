@@ -31,7 +31,7 @@ OBJFILES	=	$(SRCFILES:%.c=%.o)
 SRC			=	$(addprefix src/,$(SRCFILES))
 OBJ			=	$(addprefix obj/,$(OBJFILES))
 CC			=	gcc
-FLAGS		=	-Wextra -Wall -Werror -O2
+CFLAGS		+=	-Wextra -Wall -Werror -O2
 INC			=	-I libft/inc -I inc/
 LIB			=	-L libft/ -lft -ltermcap
 
@@ -39,13 +39,13 @@ all:$(NAME)
 
 $(NAME): $(OBJ)
 	make -C libft/
-	$(CC) $(FLAGS) -o $@ $^ $(LIB)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIB)
 
 objdir:
 	mkdir -p obj/
 
 obj/%.o: src/%.c | objdir
-	$(CC) $(FLAGS) -c $< -o $@ $(INC)
+	$(CC) $(CFLAGS) -c $< -o $@ $(INC)
 
 rmobj:
 	rm -rf obj/
