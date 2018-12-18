@@ -52,6 +52,7 @@ void	col_print_loop(int cw, int nc, int count, t_exec **a)
 	while (nr * nc < count)
 		nr++;
 	i = 0;
+    f = 0;
 	while (i < nr)
 	{
 		j = 0;
